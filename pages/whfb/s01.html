@@ -1,0 +1,28 @@
+<div class="page-header">
+  <div class="ph-num">01 — FOUNDATION</div>
+  <h1>ภาพรวม &amp; หลักการพื้นฐาน</h1>
+  <p class="ph-sub">WHfB แทน password ด้วย asymmetric key pair ที่ผูกกับ TPM hardware โดยตรง — ไม่มี shared secret ส่งผ่านเครือข่าย</p>
+</div>
+<p>Windows Hello for Business ไม่ใช่แค่ "MFA เพิ่มชั้น" แต่เป็นการออกแบบใหม่ทั้งหมด ไม่มี password ใน AD ที่ใช้ตรวจสอบ มีแค่ key pair ที่ผูกกับ hardware ของเครื่องนั้นเครื่องเดียว</p>
+<h2>หลักการ 3 ข้อ</h2>
+<div class="flow-steps">
+  <div class="flow-step"><div class="step-num">1</div><div class="step-body"><strong>Something you have — TPM</strong><p>Private key ถูกสร้างและเก็บใน TPM chip ไม่สามารถ export ออกมาได้ แม้แต่ OS ที่ถูก compromise ก็เข้าถึงไม่ได้</p></div></div>
+  <div class="flow-step"><div class="step-num">2</div><div class="step-body"><strong>Something you know/are — Gesture</strong><p>PIN หรือ Biometric ไม่ได้ "ส่ง" ไปไหน แค่ "unlock" การใช้ private key ภายใน TPM ของเครื่องนั้นเท่านั้น</p></div></div>
+  <div class="flow-step"><div class="step-num">3</div><div class="step-body"><strong>Identity binding — Public key ใน IdP</strong><p>Entra ID / AD เก็บ public key คู่กัน การพิสูจน์ตัวตน = เซ็น challenge ด้วย private key ให้ IdP verify ด้วย public key</p></div></div>
+</div>
+<div class="callout info"><span class="label">📌 PIN ≠ Password</span><p>PIN ไม่เคยออกจากเครื่อง ไม่ถูก hash เพื่อส่งเครือข่าย ไม่มีใน AD ถ้าขโมย PIN แต่ไม่มีเครื่อง → ใช้งานไม่ได้</p></div>
+<h2>WHfB vs Windows Hello (Consumer)</h2>
+<div class="tbl-wrap"><table>
+  <tr><th>มิติ</th><th>Windows Hello</th><th>Windows Hello for Business</th></tr>
+  <tr><td>เป้าหมาย</td><td>Personal account</td><td>Enterprise (AD/Entra ID)</td></tr>
+  <tr><td>Key storage</td><td>Software หรือ TPM</td><td>TPM บังคับ</td></tr>
+  <tr><td>MFA requirement</td><td>ไม่บังคับ</td><td>บังคับก่อน enroll</td></tr>
+  <tr><td>Certificate/Key binding</td><td>ไม่ผูกกับ PKI</td><td>ผูกกับ IdP (Entra/AD)</td></tr>
+</table></div>
+<h2>Key Algorithms</h2>
+<div class="tbl-wrap"><table>
+  <tr><th>Algorithm</th><th>ใช้ที่ไหน</th><th>Key size</th><th>Hash</th></tr>
+  <tr><td>RSA-PKCS1v15</td><td>Legacy Key Trust, ADFS</td><td>2048-bit</td><td>SHA-256</td></tr>
+  <tr><td>ECDSA P-256</td><td>Cloud Kerberos, Entra ID</td><td>256-bit ECC</td><td>SHA-256</td></tr>
+  <tr><td>ECDSA P-384</td><td>High-security policy</td><td>384-bit ECC</td><td>SHA-384</td></tr>
+</table></div>

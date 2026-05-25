@@ -1,0 +1,28 @@
+<div class="page-header">
+  <div class="ph-num" style="background:#1b5e20">08 — VSC SETUP</div>
+  <h1>Test Smart Card Logon</h1>
+  <p class="ph-sub">Kerberos PKINIT authentication sequence — Step 5 (CRL check) คือจุดที่ fail บ่อยที่สุด</p>
+</div>
+
+<h2>Kerberos PKINIT — Login Sequence</h2>
+<div class="tbl-wrap"><table>
+  <tr><th>#</th><th>Actor</th><th>Action</th></tr>
+  <tr><td><strong>1</strong></td><td>CLIENT01</td><td>User enters PIN → TPM unlocks private key on VSC</td></tr>
+  <tr><td><strong>2</strong></td><td>CLIENT01</td><td>Creates cryptographic signature + attaches user certificate → builds AS_REQ</td></tr>
+  <tr><td><strong>3</strong></td><td>CLIENT01 → DC01</td><td>Sends AS_REQ to DC01 on Kerberos port 88</td></tr>
+  <tr><td><strong>4</strong></td><td>DC01 (KDC)</td><td>Traces cert chain: LabUser01 cert ← Issuing CA ← Root CA</td></tr>
+  <tr><td><strong>5</strong></td><td>DC01 (KDC)</td><td class="bad"><strong>Downloads CRL from LDAP — checks cert is NOT revoked ← MOST COMMON FAILURE</strong></td></tr>
+  <tr><td><strong>6</strong></td><td>DC01 (KDC)</td><td>Looks up LabUser01@lab.local in Active Directory</td></tr>
+  <tr><td><strong>7</strong></td><td>DC01 (KDC)</td><td>All checks pass → issues Ticket-Granting Ticket (TGT)</td></tr>
+  <tr><td><strong>8</strong></td><td>DC01 → CLIENT01</td><td>Sends TGT back to CLIENT01</td></tr>
+  <tr><td><strong>9</strong></td><td>CLIENT01</td><td>Uses TGT to request session ticket → loads LabUser01 desktop</td></tr>
+</table></div>
+
+<h2>Step-by-Step Login Test</h2>
+<div class="flow-steps">
+  <div class="flow-step"><div class="step-num">1</div><div class="step-body"><strong>Lock หรือ Sign Out</strong><p>Windows + L หรือ sign out completely</p></div></div>
+  <div class="flow-step"><div class="step-num">2</div><div class="step-body"><strong>เลือก Smart Card Sign-in</strong><p>Login screen → click <em>Sign-in options</em> → click <strong>Smart Card icon</strong> (card with chip symbol)<br>PIN entry field จะปรากฏ</p></div></div>
+  <div class="flow-step"><div class="step-num">3</div><div class="step-body"><strong>Enter PIN</strong><p>Type PIN: <code>12345678</code> (ถ้าใช้ /pin default) → Press Enter<br>Expected: loading animation → LabUser01 desktop ภายใน 5–15 วินาที</p></div></div>
+</div>
+<div class="callout tip"><span class="label">💡 ไม่มี Smart Card icon ที่ login screen</span><p>VSC missing หรือ certificate ไม่ได้ enroll — กลับไป Section 6 และ Section 7</p></div>
+<div class="callout info"><span class="label">📌 ถ้า Login ล้มเหลว</span><p>ไปที่ Section 9 Troubleshooting — เริ่มจาก <code>certutil -scinfo</code> บน CLIENT01 ซึ่งจะบอกได้ชัดเจนว่า chain fail ที่ level ไหน</p></div>

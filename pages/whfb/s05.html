@@ -1,0 +1,41 @@
+<div class="page-header">
+  <div class="ph-num">05 — CRYPTO INTERNALS</div>
+  <h1>Key Trust — msDS-KeyCredentialLink</h1>
+  <p class="ph-sub">โครงสร้าง binary blob และกระบวนการที่ DC ใช้ validate โดยไม่ต้องใช้ certificate</p>
+</div>
+<h2>5.1 KeyCredential Binary Blob (TLV Format)</h2>
+<pre><span class="cm">// msDS-KeyCredentialLink format: B:&lt;length&gt;:&lt;hex_blob&gt;:&lt;DN&gt;</span>
+<span class="ct">KeyCredential</span> {
+    <span class="ck">Version</span>:         <span class="cv">0x00000200</span>,   <span class="cm">// DWORD LE, Version 2</span>
+
+    <span class="cm">// Tag 0x01 — Key Material</span>
+    <span class="ck">KeyMaterial</span>:     &lt;raw public key bytes&gt;,
+    <span class="cm">// RSA: BCRYPT_RSAKEY_BLOB + exponent + modulus</span>
+    <span class="cm">// ECC: BCRYPT_ECCKEY_BLOB + X(32) + Y(32) bytes</span>
+
+    <span class="cm">// Tag 0x02 — Key ID (DC ใช้ match กับ PKINIT request)</span>
+    <span class="ck">Identifier</span>:      <span class="ch">SHA256</span>(KeyMaterial),
+
+    <span class="cm">// Tag 0x04 — Key Usage</span>
+    <span class="ck">KeyUsage</span>:        <span class="cv">0x01</span>,         <span class="cm">// 0x01=NGC, 0x07=FIDO2</span>
+
+    <span class="cm">// Tag 0x06 — Creation Time (FILETIME)</span>
+    <span class="ck">KeyCreationTime</span>: &lt;8 bytes FILETIME&gt;,
+
+    <span class="cm">// Tag 0x08 — Device ID</span>
+    <span class="ck">DeviceId</span>:        &lt;GUID 16 bytes&gt;,
+
+    <span class="cm">// Tag 0x0B — Key Source</span>
+    <span class="ck">KeySource</span>:       <span class="cv">0x00</span>,         <span class="cm">// 0x00=AD, 0x01=AzureAD</span>
+}
+<span class="ch">KeyID = SHA256( BCRYPT_KEY_BLOB_bytes )</span></pre>
+
+<h2>5.2 DC Validation Flow</h2>
+<div class="flow-steps">
+  <div class="flow-step"><div class="step-num">1</div><div class="step-body"><strong>Client ส่ง PKINIT AS-REQ</strong><p>PA-PK-AS-REQ เซ็นด้วย WHfB private key พร้อม KeyID ใน subjectKeyIdentifier</p></div></div>
+  <div class="flow-step"><div class="step-num">2</div><div class="step-body"><strong>DC ค้นหา user จาก UPN</strong><p>ใช้ UPN ใน PKINIT request ค้นหา user object ใน AD</p></div></div>
+  <div class="flow-step"><div class="step-num">3</div><div class="step-body"><strong>อ่าน msDS-KeyCredentialLink ทุก entry</strong><p>DC อ่าน attribute ทุก entry จาก user object</p></div></div>
+  <div class="flow-step"><div class="step-num">4</div><div class="step-body"><strong>Match KeyID</strong><p>คำนวณ SHA256(KeyMaterial) ของแต่ละ entry → match กับ KeyID ใน request</p></div></div>
+  <div class="flow-step"><div class="step-num">5</div><div class="step-body"><strong>Verify Signature → ออก TGT</strong><p>verify PKINIT signature ด้วย public key ที่ match → ออก Kerberos TGT</p></div></div>
+</div>
+<div class="callout info"><span class="label">📌 Entra Connect Sync</span><p>ใน Hybrid setup Entra Connect sync <code>msDS-KeyCredentialLink</code> ทั้งสองทาง — WHfB ที่ provision บน Entra ID จะ sync ลงมาเป็น AD attribute ด้วย</p></div>

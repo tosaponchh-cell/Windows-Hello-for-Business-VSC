@@ -1,0 +1,76 @@
+<div class="page-header">
+  <div class="ph-num" style="background:#1b5e20">09 — OPERATIONS</div>
+  <h1>Troubleshooting &amp; Problem Resolution</h1>
+  <p class="ph-sub">เริ่มจาก certutil -scinfo เสมอ — มันบอกได้ว่า chain fail ที่ level ไหน</p>
+</div>
+
+<h2>Troubleshooting Decision Tree</h2>
+<div class="dtree">
+  <div class="dt-node dt-q">Smart Card Login ล้มเหลว?</div>
+  <div class="dt-line"></div>
+  <div class="dt-node" style="background:#fff3e0;border-color:#ffa726;color:#bf6c00;font-weight:500">รัน: <code>certutil -scinfo</code> บน CLIENT01 (ป้อน PIN)</div>
+  <div class="dt-line"></div>
+  <div class="dt-branch">
+    <div class="dt-side">
+      <div class="dt-label">dwErrorStatus=0 ทุกตัว</div>
+      <div class="dt-line"></div>
+      <div class="dt-node dt-a">VSC chain valid<br>ตรวจ DC01 Event Viewer<br>Kerberos error 14/16</div>
+    </div>
+    <div class="dt-side">
+      <div class="dt-label">มี CertContext ที่ ≠ 0</div>
+      <div class="dt-line"></div>
+      <div class="dt-node dt-b">CRL missing หรือ expired<br>ระบุ level ที่ fail<br>[0][0]=User Cert [0][1]=CA</div>
+      <div class="dt-line"></div>
+      <div class="dt-node dt-c">ทำ Phase A→D<br>(CRL Resolution)</div>
+    </div>
+  </div>
+</div>
+
+<h2>Interpreting certutil -scinfo Output</h2>
+<div class="tbl-wrap"><table>
+  <tr><th>Output</th><th>ความหมาย</th></tr>
+  <tr><td><code>dwErrorStatus=0</code> ทุก CertContext</td><td class="good">All clear — chain and revocation valid</td></tr>
+  <tr><td><code>CERT_TRUST_IS_OFFLINE_REVOCATION (1000040)</code></td><td class="bad">CRL unreachable — publish และ import CRL ของ CA นั้น</td></tr>
+  <tr><td><code>CERT_TRUST_REVOCATION_STATUS_UNKNOWN (40)</code></td><td class="bad">CRL ไม่พบที่ไหนเลย</td></tr>
+  <tr><td><code>CertContext[0][0]</code> fails</td><td class="bad">ปัญหาที่ user certificate — ตรวจ enrollment และ UPN</td></tr>
+  <tr><td><code>CertContext[0][1]</code> fails</td><td class="warn">ปัญหาที่ Issuing CA cert — Root CA CRL missing</td></tr>
+  <tr><td><code>Private key verifies OK</code></td><td class="good">VSC hardware healthy — card ไม่ใช่ปัญหา</td></tr>
+</table></div>
+
+<h2>CRL Resolution — 4 Phases</h2>
+<pre><span class="ch">Phase A — ROOTCA: Refresh Root CA CRL</span>
+<span class="cm">// certsrv.msc → Revoked Certificates → All Tasks → Publish → New CRL</span>
+<span class="cm">// Copy LAB-RootCA.crl ไปที่ ISSUINGCA, DC01, CLIENT01</span>
+<span class="cm">// Shut down ROOTCA ทันที</span>
+
+<span class="ch">Phase B — ISSUINGCA: Update</span>
+<span class="cm">// certlm.msc → Trusted Root → CRLs → Delete expired</span>
+<span class="ck">certutil -addstore -f root "C:\Certs\LAB-RootCA.crl"</span>
+<span class="ck">certutil -addstore -f CA   "C:\Certs\LAB-RootCA.crl"</span>
+<span class="ck">certutil -dspublish -f "C:\Certs\LAB-RootCA.crl" RootCA</span>
+<span class="cm">// Restart ISSUINGCA VM แล้ว publish Issuing CRL ใหม่</span>
+<span class="cm">// certsrv.msc → Revoked Certificates → Publish</span>
+
+<span class="ch">Phase C — DC01 (KDC): Update</span>
+<span class="ck">certutil -addstore -f root "C:\Certs\LAB-RootCA.crl"</span>
+<span class="ck">certutil -urlcache crl delete</span>
+<span class="ck">certutil -setreg chain\ChainCacheResyncFiletime @now</span>
+<span class="cm">// Restart DC01 เพื่อ flush KDC Kerberos cache</span>
+
+<span class="ch">Phase D — CLIENT01: Update</span>
+<span class="ck">certutil -addstore -f root "C:\Certs\LAB-RootCA.crl"</span>
+<span class="ck">certutil -urlcache crl delete</span>
+<span class="cm">// Restart CLIENT01 → ทดสอบ Smart Card login ด้วย PIN</span></pre>
+
+<h2>Problem Reference</h2>
+<div class="tbl-wrap"><table>
+  <tr><th>Scenario</th><th>Error</th><th>Root Cause</th><th>Solution</th></tr>
+  <tr><td>Revocation status unknown</td><td class="bad">Login fails</td><td>CRL missing/expired on DC01 หรือ CLIENT01</td><td>Phases A–D</td></tr>
+  <tr><td>CRYPT_E_REVOCATION_OFFLINE</td><td class="bad">0x80092013</td><td>CRL download point unreachable</td><td>Publish CRL ลง AD, import .crl ลง local store</td></tr>
+  <tr><td>CA service stops after start</td><td class="bad">Red X in certsrv</td><td>Expired CRL in local store</td><td>certlm.msc → ลบ expired CRLs → restart VM</td></tr>
+  <tr><td>Template missing at enrollment</td><td class="warn">Not in wizard list</td><td>Not published หรือ no Enroll rights</td><td>certsrv.msc → publish, Security tab → add Enroll</td></tr>
+  <tr><td>No Smart Card icon at login</td><td class="warn">Icon missing</td><td>VSC missing หรือ cert not enrolled</td><td>Section 6: re-create VSC, Section 7: re-enroll</td></tr>
+  <tr><td>tpmvscmgr: Access denied</td><td class="bad">0x80070005</td><td>CMD not elevated</td><td>Right-click CMD → Run as administrator</td></tr>
+  <tr><td>ERROR_DS_REFERRAL</td><td class="bad">dspublish fails</td><td>Standalone CA = UnavailableConfigDN</td><td>ต้องเพิ่ม <code>RootCA</code> ท้ายคำสั่ง</td></tr>
+</table></div>
+<div class="callout warn"><span class="label">⚠ ห้ามใช้คำสั่งนี้เด็ดขาด</span><p><code>certutil -setreg ca\CRLFlags +CRLF_REVCHECK_IGNORE_OFFLINE</code> — disable revocation checking ทั้งหมด ซึ่ง defeat จุดประสงค์ทั้งหมดของ PKI ให้แก้ root cause เสมอ</p></div>

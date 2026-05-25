@@ -1,0 +1,36 @@
+<div class="page-header">
+  <div class="ph-num">02 — FOUNDATION</div>
+  <h1>เปรียบเทียบ Trust Models ทั้ง 3</h1>
+  <p class="ph-sub">Cloud Kerberos · Key Trust · Certificate Trust — เลือกให้ถูกสภาพแวดล้อม</p>
+</div>
+<div class="compare-grid">
+  <div class="compare-card ck"><div class="card-head">☁ Cloud Kerberos Trust</div><div class="card-body">
+    <div class="item"><span class="lbl">แนะนำ</span>Microsoft 2024+</div>
+    <div class="item"><span class="lbl">PKI</span>ไม่ต้องการ</div>
+    <div class="item"><span class="lbl">DC</span>2016+ (แนะนำ 2019)</div>
+    <div class="item"><span class="lbl">Key store</span>Entra ID</div>
+    <div class="item"><span class="lbl">ซับซ้อน</span>ต่ำ</div>
+  </div></div>
+  <div class="compare-card kt"><div class="card-head">🔑 Key Trust</div><div class="card-body">
+    <div class="item"><span class="lbl">แนะนำ</span>ใช้ได้ถ้าไม่มี Entra</div>
+    <div class="item"><span class="lbl">PKI</span>ไม่ต้องการ</div>
+    <div class="item"><span class="lbl">DC</span>2016+</div>
+    <div class="item"><span class="lbl">Key store</span>msDS-KeyCredentialLink</div>
+    <div class="item"><span class="lbl">ซับซ้อน</span>ปานกลาง</div>
+  </div></div>
+  <div class="compare-card ct"><div class="card-head">📜 Certificate Trust</div><div class="card-body">
+    <div class="item"><span class="lbl">แนะนำ</span>Legacy / complex env</div>
+    <div class="item"><span class="lbl">PKI</span>ต้องมี CA + NDES</div>
+    <div class="item"><span class="lbl">DC</span>2008 R2+</div>
+    <div class="item"><span class="lbl">Key store</span>X.509 certificate</div>
+    <div class="item"><span class="lbl">ซับซ้อน</span>สูง</div>
+  </div></div>
+</div>
+<div class="tbl-wrap"><table>
+  <tr><th>Feature</th><th>Cloud Kerberos</th><th>Key Trust</th><th>Certificate Trust</th></tr>
+  <tr><td>ต้องการ PKI / CA</td><td class="good">ไม่</td><td class="good">ไม่</td><td class="bad">ใช่ (NDES/CES/CA)</td></tr>
+  <tr><td>Smart card emulation</td><td class="warn">ผ่าน Entra Kerberos</td><td class="bad">ไม่รองรับ</td><td class="good">รองรับเต็ม</td></tr>
+  <tr><td>RDP เข้า server</td><td class="good">ใช้ได้ (Cloud TGT)</td><td class="warn">จำกัด (Win 2016+)</td><td class="good">ใช้ได้เต็ม</td></tr>
+  <tr><td>Entra Kerberos object</td><td class="bad">ต้องการ</td><td class="good">ไม่ต้อง</td><td class="good">ไม่ต้อง</td></tr>
+  <tr><td>Rollback / แก้ปัญหา</td><td class="good">ง่าย</td><td class="warn">ปานกลาง</td><td class="bad">ซับซ้อน</td></tr>
+</table></div>

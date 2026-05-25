@@ -1,0 +1,65 @@
+<div class="page-header">
+  <div class="ph-num" style="background:#1b5e20">01 — FOUNDATION</div>
+  <h1>Architecture &amp; Prerequisites</h1>
+  <p class="ph-sub">Lab environment, Why VSC, Chain of Trust และ File Flow ระหว่าง servers</p>
+</div>
+
+<h2>Lab Environment</h2>
+<div class="tbl-wrap"><table>
+  <tr><th>Role</th><th>Hostname</th><th>IP</th></tr>
+  <tr><td>Active Directory / KDC</td><td>DC01</td><td>192.168.1.10</td></tr>
+  <tr><td>Root CA (Offline)</td><td>ROOTCA</td><td>192.168.1.20</td></tr>
+  <tr><td>Issuing CA (Enterprise Sub-CA)</td><td>ISSUINGCA</td><td>192.168.1.30</td></tr>
+  <tr><td>Domain Client + vTPM</td><td>CLIENT01</td><td>192.168.1.50</td></tr>
+  <tr><td>Domain</td><td colspan="2">lab.local</td></tr>
+  <tr><td>Test User / VSC / Default PIN</td><td colspan="2">LabUser01 / LabVSC / 12345678</td></tr>
+</table></div>
+
+<h2>Password Login vs Virtual Smart Card</h2>
+<div class="tbl-wrap"><table>
+  <tr><th>Aspect</th><th>Password Login</th><th>Smart Card (VSC) Login</th></tr>
+  <tr><td>Authentication type</td><td class="warn">Single factor</td><td class="good">Two factor: TPM + PIN</td></tr>
+  <tr><td>Credential travels over network</td><td class="bad">YES — hash sent to KDC</td><td class="good">NO — private key never leaves TPM</td></tr>
+  <tr><td>Vulnerable to Pass-the-Hash</td><td class="bad">YES</td><td class="good">NO — TPM-bound key cannot be extracted</td></tr>
+  <tr><td>Replay attack possible</td><td class="bad">YES</td><td class="good">NO — each auth uses unique signature</td></tr>
+  <tr><td>Forgotten credential recovery</td><td>Reset password via AD</td><td class="warn">Destroy &amp; re-create VSC (loses cert)</td></tr>
+</table></div>
+
+<h2>Two-Tier PKI Chain of Trust</h2>
+<div class="struct-box">
+  <div class="struct-header">PKI Hierarchy — lab.local</div>
+  <div class="struct-row" style="flex-direction:column;gap:0">
+    <div style="padding:.6rem 1rem;color:#64ffda;font-family:'IBM Plex Mono',monospace;font-size:12px">ROOTCA — Self-signed | Offline | Trust Anchor</div>
+    <div style="padding:0 1rem .2rem 2rem;color:#5a7a92;font-family:'IBM Plex Mono',monospace;font-size:11px">└─ Signs ↓</div>
+    <div style="padding:.4rem 1rem .4rem 2rem;color:#82aaff;font-family:'IBM Plex Mono',monospace;font-size:12px">ISSUINGCA — Signed by Root | Enterprise | Issues user &amp; machine certs</div>
+    <div style="padding:0 1rem .2rem 3rem;color:#5a7a92;font-family:'IBM Plex Mono',monospace;font-size:11px">└─ Signs ↓</div>
+    <div style="padding:.4rem 1rem .6rem 3rem;color:#ffd700;font-family:'IBM Plex Mono',monospace;font-size:12px">User Cert on VSC (LabUser01) — Stored in TPM | Smart Card Logon EKU</div>
+  </div>
+</div>
+
+<h2>File Flow Between Servers</h2>
+<div class="tbl-wrap"><table>
+  <tr><th>File</th><th>Type</th><th>From</th><th>To</th></tr>
+  <tr><td><code>LAB-RootCA.crt</code></td><td>Certificate</td><td>ROOTCA</td><td>ISSUINGCA, DC01</td></tr>
+  <tr><td><code>LAB-RootCA.crl</code></td><td>Revocation List</td><td>ROOTCA</td><td>ISSUINGCA, DC01, CLIENT01</td></tr>
+  <tr><td><code>ISSUINGCA.req</code></td><td>Cert Request</td><td>ISSUINGCA</td><td>ROOTCA (for signing)</td></tr>
+  <tr><td><code>IssuingCA_Signed.cer</code></td><td>Signed Cert</td><td>ROOTCA</td><td>ISSUINGCA (install)</td></tr>
+</table></div>
+<div class="callout warn"><span class="label">⚠ WARNING — Most Common Mistake</span><p>ต้อง transfer ทั้ง <code>LAB-RootCA.crt</code> <strong>และ</strong> <code>LAB-RootCA.crl</code> จาก ROOTCA เสมอ — transfer แค่ .crt โดยไม่มี .crl คือสาเหตุที่พบบ่อยที่สุดที่ทำให้ Smart Card login ล้มเหลว</p></div>
+
+<h2>CRL Dependency Map</h2>
+<div class="tbl-wrap"><table>
+  <tr><th>Machine</th><th>Needs Root CA CRL?</th><th>Needs Issuing CA CRL?</th><th>เหตุผล</th></tr>
+  <tr><td>ISSUINGCA</td><td class="bad">YES — Local Root Store</td><td>Publishes own CRL</td><td>CA service ตรวจ Root CA CRL ตอน startup</td></tr>
+  <tr><td>DC01 / KDC</td><td class="bad">YES — Local + AD (LDAP)</td><td class="bad">YES — from LDAP</td><td>KDC ทำ revocation check บน user cert ตอน Kerberos PKINIT</td></tr>
+  <tr><td>CLIENT01</td><td class="bad">YES — Local Root Store</td><td class="bad">YES — via LDAP</td><td>Client verify cert chain ก่อนส่งให้ KDC</td></tr>
+</table></div>
+
+<h2>Reading Guide</h2>
+<div class="tbl-wrap"><table>
+  <tr><th>เป้าหมาย</th><th>เริ่มที่</th></tr>
+  <tr><td>Build ตั้งแต่ต้น</td><td>Section 2 — Build Root CA ตามลำดับ</td></tr>
+  <tr><td>PKI build แล้ว ต้องการแค่ VSC</td><td>Section 5 — Certificate Template</td></tr>
+  <tr><td>VSC created แต่ login ล้มเหลว</td><td>Section 9 — Troubleshooting</td></tr>
+  <tr><td>Quick command lookup</td><td>Section 10 — Command Reference</td></tr>
+</table></div>

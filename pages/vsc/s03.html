@@ -1,0 +1,30 @@
+<div class="page-header">
+  <div class="ph-num" style="background:#1b5e20">03 — PKI BUILD</div>
+  <h1>Build Issuing CA</h1>
+  <p class="ph-sub">ทำบน ISSUINGCA — ต้อง join domain, log in as Enterprise Admin</p>
+</div>
+<div class="callout info"><span class="label">📌 INFO</span><p>ทำบน <strong>ISSUINGCA</strong> — ต้อง domain-joined, log in as <code>lab\Administrator</code> (Enterprise Admin)</p></div>
+
+<h2>Phase 1: Publish Root CA Files to Active Directory</h2>
+<p>ก่อนติดตั้ง role ต้อง publish Root CA files ลง AD ก่อน</p>
+<div class="flow-steps">
+  <div class="flow-step"><div class="step-num">1</div><div class="step-body"><strong>Copy Root CA Files ไปที่ ISSUINGCA</strong><p>วาง <code>LAB-RootCA.crt</code> และ <code>LAB-RootCA.crl</code> ใน <code>C:\Certs\</code></p></div></div>
+  <div class="flow-step"><div class="step-num">2</div><div class="step-body"><strong>Publish Root CA Certificate ลง AD</strong>
+<pre style="margin:.4rem 0 0"><span class="ck">certutil -dspublish -f "C:\Certs\LAB-RootCA.crt" RootCA</span>
+<span class="cm">// Expected: CertUtil: -dsPublish command completed successfully</span></pre></div></div>
+  <div class="flow-step"><div class="step-num">3</div><div class="step-body"><strong>Publish Root CA CRL ลง AD</strong>
+<pre style="margin:.4rem 0 0"><span class="ck">certutil -dspublish -f "C:\Certs\LAB-RootCA.crl" RootCA</span>
+<span class="cm">// Expected: Base CRL added to DS store. CertUtil: -dsPublish command completed successfully</span></pre></div></div>
+  <div class="flow-step"><div class="step-num">4</div><div class="step-body"><strong>Import ลง Local Machine Store</strong>
+<pre style="margin:.4rem 0 0"><span class="ck">certutil -addstore -f root "C:\Certs\LAB-RootCA.crt"</span>
+<span class="ck">certutil -addstore -f root "C:\Certs\LAB-RootCA.crl"</span>
+<span class="ck">certutil -addstore -f CA   "C:\Certs\LAB-RootCA.crl"</span></pre></div></div>
+</div>
+<div class="callout warn"><span class="label">⚠ ERROR_DS_REFERRAL</span><p>ถ้าเจอ error นี้บน <code>certutil -dspublish</code>: Root CA เป็น Standalone ดังนั้น CRL มี 'UnavailableConfigDN' — แก้ไขโดยต้องใส่ <code>RootCA</code> parameter ต่อท้ายคำสั่งเสมอ</p></div>
+
+<h2>Phase 2: Install AD CS Role &amp; Generate .req</h2>
+<div class="flow-steps">
+  <div class="flow-step"><div class="step-num">5</div><div class="step-body"><strong>Install Role</strong><p>Server Manager → Add Roles → Active Directory Certificate Services → Certification Authority only → Install</p></div></div>
+  <div class="flow-step"><div class="step-num">6</div><div class="step-body"><strong>Configure: Enterprise Subordinate CA</strong><p>Click yellow flag → Configure AD CS<br>Setup Type: <strong>Enterprise CA</strong> (available เพราะ join domain แล้ว)<br>CA Type: <strong>Subordinate CA</strong> | RSA 2048, SHA-256<br>CA Name: <code>LAB-IssuingCA</code><br>⚠ <strong>หน้าสำคัญ — Certificate Request:</strong> เลือก <em>Save a certificate request to file</em><br>จด path ของ .req file ก่อน click Configure เช่น <code>C:\ISSUINGCA.req</code></p></div></div>
+</div>
+<div class="callout tip"><span class="label">💡 TIP</span><p>CA service จะแสดงสถานะ <strong>stopped</strong> หลัง Configure — เป็นเรื่องปกติ มันไม่สามารถ start ได้จนกว่าจะติดตั้ง signed .cer ใน Section 4</p></div>

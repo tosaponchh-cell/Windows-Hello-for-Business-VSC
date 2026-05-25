@@ -1,0 +1,32 @@
+<div class="page-header">
+  <div class="ph-num" style="background:#1b5e20">05 — PKI BUILD</div>
+  <h1>Certificate Template</h1>
+  <p class="ph-sub">ทำบน ISSUINGCA — template นี้กำหนด rules สำหรับ Smart Card certificates ที่ออกให้ user</p>
+</div>
+<div class="callout warn"><span class="label">⚠ CRITICAL — Security Tab</span><p>Security tab คือ tab ที่ถูก miss บ่อยที่สุด ถ้าไม่ตั้ง Read + Enroll permissions สำหรับ Authenticated Users → template จะ invisible กับ user ทุกคนตอน enrollment</p></div>
+
+<h2>All Five Template Tabs</h2>
+<div class="tbl-wrap"><table>
+  <tr><th>Tab</th><th>Setting</th><th>Value ที่ต้องตั้ง</th></tr>
+  <tr><td><strong>Compatibility</strong></td><td>CA Compat</td><td>Windows Server 2012 | Recipient: Windows 10 / Server 2016</td></tr>
+  <tr><td><strong>General</strong></td><td>Key Settings</td><td>Name: <code>Lab SmartcardLogon01</code> | Validity: 1 Year | Publish cert in AD: <strong>ENABLED</strong></td></tr>
+  <tr><td><strong>Request Handling</strong></td><td>Purpose</td><td>Signature and Smartcard Logon | Prompt user during enrollment: <strong>YES</strong></td></tr>
+  <tr><td><strong>Cryptography</strong></td><td>Provider</td><td>Key Storage Provider — <strong>Microsoft Smart Card Key Storage Provider ONLY</strong> | RSA 2048 | SHA256</td></tr>
+  <tr><td><strong>Security</strong></td><td>Permissions</td><td>Authenticated Users: <strong>READ ✔ ENROLL ✔</strong></td></tr>
+</table></div>
+
+<h2>Step-by-Step</h2>
+<div class="flow-steps">
+  <div class="flow-step"><div class="step-num">1</div><div class="step-body"><strong>Open certtmpl.msc และ Duplicate Template</strong><p>Windows + R → <code>certtmpl.msc</code> → หา <em>Smartcard Logon</em> → Right-click → <strong>Duplicate Template</strong></p></div></div>
+  <div class="flow-step"><div class="step-num">2</div><div class="step-body"><strong>Configure ทุก Tab ตามตารางด้านบน</strong><p>ทำตามลำดับทุก tab โดยเฉพาะ Security tab ต้องทำเสมอ</p></div></div>
+  <div class="flow-step"><div class="step-num">3</div><div class="step-body"><strong>Publish Template ไปที่ Issuing CA</strong><p><code>certsrv.msc</code> → ขยาย CA name → Right-click <em>Certificate Templates</em><br>→ New → <strong>Certificate Template to Issue</strong> → เลือก <code>Lab SmartcardLogon01</code> → OK<br>ตรวจว่า template name ปรากฏใน Certificate Templates folder</p></div></div>
+</div>
+<div class="callout tip"><span class="label">💡 Template ไม่ปรากฏใน Issue list</span><p>รอ 2 นาทีสำหรับ AD replication จากนั้น stop และ start CA service แล้ว refresh</p></div>
+
+<h2>Scenarios</h2>
+<div class="tbl-wrap"><table>
+  <tr><th>Scenario</th><th>Result</th><th>Root Cause</th><th>Solution</th></tr>
+  <tr><td class="good">A — OK</td><td>Template in certsrv.msc</td><td>All tabs configured</td><td>→ Section 6</td></tr>
+  <tr><td class="warn">B — Template not in Issue list</td><td>Missing from dialog</td><td>AD replication delay</td><td>Wait 2 min, Stop/Start CA service, Refresh</td></tr>
+  <tr><td class="bad">C — No PIN asked at enrollment</td><td>Wizard completes without PIN</td><td>Wrong provider in Cryptography tab</td><td>Template Cryptography → Microsoft Smart Card Key Storage Provider only</td></tr>
+</table></div>

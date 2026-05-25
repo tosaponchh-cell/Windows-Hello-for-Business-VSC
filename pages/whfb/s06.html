@@ -1,0 +1,44 @@
+<div class="page-header">
+  <div class="ph-num">06 — CRYPTO INTERNALS</div>
+  <h1>Cloud Kerberos Trust — PKINIT Deep Dive</h1>
+  <p class="ph-sub">PA-PK-AS-REQ structure, paChecksum binding และ Partial TGT → Full TGT exchange</p>
+</div>
+<h2>6.1 PA-PK-AS-REQ — ข้อมูลที่ Hash และ Sign</h2>
+<pre><span class="ct">AuthPack</span> {                       <span class="cm">// ← DER encode แล้ว sign ทั้ง struct</span>
+    pkAuthenticator: {
+        cusec:      &lt;microseconds&gt;,
+        ctime:      &lt;KerberosTime UTC&gt;,
+        nonce:      &lt;INT32 random&gt;,
+        <span class="ch">paChecksum: SHA256( DER_Encode(KDC-REQ-BODY) )</span>
+        <span class="cm">           ↑ bind signature เข้ากับ request body ทั้งหมด</span>
+        <span class="cm">             ป้องกัน signature substitution attack</span>
+    },
+    supportedCMSTypes: [ecdsa-with-SHA256, sha256WithRSAEncryption]
+}
+<span class="cm">// CMS SignedData wrapping</span>
+<span class="ct">PA-PK-AS-REQ</span>.signedAuthPack = <span class="ct">SignedData</span> {
+    digest:    <span class="ch">SHA256</span>( DER_Encode(AuthPack) ),
+    signature: <span class="ch">ECDSA_Sign</span>(WHfB_privateKey, digest),
+    sid:       subjectKeyIdentifier = KeyID
+}</pre>
+<div class="callout info"><span class="label">💡 paChecksum คืออะไร</span><p><code>paChecksum = SHA256(KDC-REQ-BODY)</code> bind signature เข้ากับ request body ทั้งหมด ป้องกัน attacker ที่ดัก PKINIT packet แล้วเอา signature ไปใส่ใน request อื่น (signature substitution attack)</p></div>
+
+<h2>6.2 Partial TGT → Full TGT Exchange</h2>
+<pre><span class="cn">Step 1:</span> Client → Entra ID : PA-PK-AS-REQ (signed with WHfB key)
+        Entra ID → Client  : AS-REP + Partial TGT {
+            crealm: <span class="cs">"KERBEROS.MICROSOFTONLINE.COM"</span>,
+            ticket: &lt;encrypted with AzureADKerberos krbtgt key&gt;
+        }
+
+<span class="cn">Step 2:</span> Client → on-prem DC : TGS-REQ {
+            padata:   [Partial TGT],
+            req-body: { sname: krbtgt/CORP.LOCAL }
+        }
+
+<span class="cm">// DC ตรวจ Partial TGT ผ่าน AzureADKerberos object:</span>
+<span class="ct">AzureADKerberos</span>:
+  CN=AzureADKerberos, OU=Domain Controllers, DC=corp, DC=local
+  → krbtgt_AzureAD key สำหรับ decrypt Partial TGT
+
+<span class="cn">Step 3:</span> DC ออก Full TGT encrypted with on-prem krbtgt key
+<span class="cn">Step 4:</span> ใช้ Full TGT เข้า on-prem resource ตามปกติ</pre>

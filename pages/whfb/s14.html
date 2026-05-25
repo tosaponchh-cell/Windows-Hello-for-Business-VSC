@@ -1,0 +1,84 @@
+<div class="page-header">
+  <div class="ph-num">14 — VISUAL GUIDE</div>
+  <h1>Threat Model · Conditional Access · Hospital</h1>
+  <p class="ph-sub">แผนภาพ 3 หัวข้อสำคัญสำหรับอธิบายให้ผู้บริหารและ Consultant</p>
+</div>
+
+<div class="tab-container">
+<div class="tab-nav">
+  <button class="tab-btn active" data-pane="tab-threat" onclick="switchTab(this)">🛡 Threat Model</button>
+  <button class="tab-btn" data-pane="tab-ca" onclick="switchTab(this)">🔐 Conditional Access</button>
+  <button class="tab-btn" data-pane="tab-hospital" onclick="switchTab(this)">🏥 Hospital &amp; Shared</button>
+</div>
+
+<div id="tab-threat" class="tab-pane active">
+  <p style="margin-top:.5rem">WHfB ตัด attack vector ที่พบบ่อยที่สุดออกได้โดยไม่ต้องซื้ออะไรเพิ่ม</p>
+  <div class="threat-summary">
+    <div class="threat-stat ts-blocked"><span class="ts-num">8</span><span class="ts-lbl">Blocked<br>ตัดทิ้งได้เลย</span></div>
+    <div class="threat-stat ts-partial"><span class="ts-num">4</span><span class="ts-lbl">Partial<br>ลดความเสี่ยงมาก</span></div>
+    <div class="threat-stat ts-out"><span class="ts-num">1</span><span class="ts-lbl">Out of Scope<br>ต้องมาตรการอื่น</span></div>
+  </div>
+  <div class="threat-group-label">🔑 Credential Theft</div>
+  <div class="threat-row"><div class="threat-name">Pass-the-Hash</div><div><span class="threat-badge tb-blocked">✓ Blocked</span></div><div class="threat-reason">WHfB ไม่ใช้ NTLM hash เลย — ไม่มี hash ให้ขโมย</div><div class="threat-risk">No credential on network</div></div>
+  <div class="threat-row"><div class="threat-name">Credential Stuffing</div><div><span class="threat-badge tb-blocked">✓ Blocked</span></div><div class="threat-reason">ไม่มี password ในระบบ — database breach ใช้ไม่ได้</div><div class="threat-risk">No password to stuff</div></div>
+  <div class="threat-row"><div class="threat-name">Kerberoasting</div><div><span class="threat-badge tb-out">— Out of scope</span></div><div class="threat-reason">โจมตี Service Account ไม่ใช่ User Account</div><div class="threat-risk">ดูแล SPN แยก</div></div>
+  <div class="threat-group-label">🎣 Phishing</div>
+  <div class="threat-row"><div class="threat-name">Password Phishing</div><div><span class="threat-badge tb-blocked">✓ Blocked</span></div><div class="threat-reason">ไม่มี password ให้พิมพ์ใส่หน้าปลอม</div><div class="threat-risk">Nothing to phish</div></div>
+  <div class="threat-row"><div class="threat-name">Fake Login (AiTM)</div><div><span class="threat-badge tb-blocked">✓ Blocked</span></div><div class="threat-reason">WebAuthn origin binding — fake site ไม่ได้รับ credential</div><div class="threat-risk">Origin mismatch = no sign</div></div>
+  <div class="threat-row"><div class="threat-name">Vishing</div><div><span class="threat-badge tb-blocked">✓ Blocked</span></div><div class="threat-reason">PIN เป็น local gesture — บอกทางโทรศัพท์ก็ใช้ไม่ได้ถ้าไม่มีเครื่อง</div><div class="threat-risk">PIN ไม่ใช่ shared secret</div></div>
+  <div class="threat-group-label">🌐 Network</div>
+  <div class="threat-row"><div class="threat-name">Man-in-the-Middle</div><div><span class="threat-badge tb-blocked">✓ Blocked</span></div><div class="threat-reason">Challenge-response + nonce — ดักได้แต่ replay ไม่ได้</div><div class="threat-risk">Nothing replayable</div></div>
+  <div class="threat-row"><div class="threat-name">Replay Attack</div><div><span class="threat-badge tb-blocked">✓ Blocked</span></div><div class="threat-reason">ทุก auth request มี one-time nonce จาก server</div><div class="threat-risk">Nonce invalidated immediately</div></div>
+  <div class="threat-group-label">💻 Local &amp; Physical</div>
+  <div class="threat-row"><div class="threat-name">Keylogger</div><div><span class="threat-badge tb-partial">◐ Partial</span></div><div class="threat-reason">PIN ไม่ส่ง network แต่ถ้าดักบน device + เครื่องถูกขโมยด้วย</div><div class="threat-risk">ต้องการทั้ง PIN + เครื่อง</div></div>
+  <div class="threat-row"><div class="threat-name">Physical Theft</div><div><span class="threat-badge tb-partial">◐ Partial</span></div><div class="threat-reason">TPM + PIN = 2FA hardware — ขโมยเครื่องโดยไม่รู้ PIN login ไม่ได้</div><div class="threat-risk">เปิด BitLocker คู่กัน</div></div>
+  <div class="threat-row"><div class="threat-name">LSASS Memory Scraping</div><div><span class="threat-badge tb-partial">◐ Partial</span></div><div class="threat-reason">Private key ไม่อยู่ใน memory แต่ PRT session_key อยู่ใน LSASS</div><div class="threat-risk">Credential Guard ช่วยได้</div></div>
+  <div class="threat-row"><div class="threat-name">Pass-the-Ticket</div><div><span class="threat-badge tb-partial">◐ Partial</span></div><div class="threat-reason">Kerberos TGT ยังมีใน memory แต่ WHfB ลด attack window</div><div class="threat-risk">ใช้ Credential Guard เสริม</div></div>
+  <div class="callout tip" style="margin-top:1.25rem"><span class="label">✅ ประโยคสรุปให้ผู้บริหาร</span><p>"WHfB ตัด attack vector ที่พบบ่อยที่สุด 8 รูปแบบออกได้เลยโดยไม่ต้องซื้ออะไรเพิ่ม ส่วน 4 รูปแบบที่เหลือลดความเสี่ยงลงอย่างมาก และยังต้อง compromise ทั้ง hardware + gesture พร้อมกัน"</p></div>
+</div>
+
+<div id="tab-ca" class="tab-pane">
+  <p style="margin-top:.5rem">WHfB ผ่านทุกเงื่อนไขของ Conditional Access ในขั้นตอนเดียว — ไม่ต้อง push notification ซ้ำ</p>
+  <div class="ca-pipeline">
+    <div class="ca-step"><div class="cs-title">Step 1 — Identity</div><div class="cs-head">ใครเข้า?</div><div class="ca-check"><span class="ck">✓</span><span>User ใน group ที่อนุญาต</span></div><div class="ca-check"><span class="ck">✓</span><span>amr: <code>ngcmfa</code> = MFA satisfied</span></div><div class="ca-check"><span class="ck">✓</span><span>Sign-in risk: Low</span></div></div>
+    <div class="ca-arrow">›</div>
+    <div class="ca-step"><div class="cs-title">Step 2 — Device</div><div class="cs-head">เครื่องไหน?</div><div class="ca-check"><span class="ck">✓</span><span>Hybrid AAD Joined</span></div><div class="ca-check"><span class="ck">✓</span><span>Compliant (Intune)</span></div><div class="ca-check"><span class="ck">✓</span><span>TPM 2.0 attested</span></div></div>
+    <div class="ca-arrow">›</div>
+    <div class="ca-step"><div class="cs-title">Step 3 — App</div><div class="cs-head">เข้าถึงอะไร?</div><div class="ca-check"><span class="ck">✓</span><span>Approved client app</span></div><div class="ca-check"><span class="ck">?</span><span>Location (optional)</span></div></div>
+    <div class="ca-arrow">›</div>
+    <div class="ca-result grant"><div class="cr-icon">✅</div><div class="cr-label">GRANT</div><div class="cr-sub">no MFA prompt</div></div>
+  </div>
+  <div class="callout info"><span class="label">💡 WHfB = MFA อัตโนมัติ</span><p>PRT มี <code>amr: ngcmfa</code> ระบบไม่ pop-up Authenticator อีก แม้ CA policy จะ require MFA — ใส่ PIN หรือ Face ครั้งเดียวตอน login แล้วเข้าได้ทุก app ตลอดวัน</p></div>
+  <div class="ca-policies">
+    <div class="ca-policy-card cpc-ok"><div class="cpc-head">✅ Require MFA for M365</div><div class="cpc-row"><span>MFA required</span><span>ngcmfa ✓</span></div><div class="cpc-row"><span>Device compliant</span><span>Intune ✓</span></div><div class="cpc-row"><span>User experience</span><span>PIN ครั้งเดียว</span></div></div>
+    <div class="ca-policy-card cpc-ok"><div class="cpc-head">✅ High-risk sign-in → block</div><div class="cpc-row"><span>Sign-in risk: High → Block</span><span>Block ✓</span></div><div class="cpc-row"><span>WHfB sign-in risk</span><span>Always Low ✓</span></div><div class="cpc-row"><span>Result for WHfB user</span><span>Never blocked</span></div></div>
+    <div class="ca-policy-card cpc-ok"><div class="cpc-head">✅ Phishing-resistant MFA</div><div class="cpc-row"><span>AAL2 required</span><span>WHfB = FIDO2-class ✓</span></div><div class="cpc-row"><span>Authenticator app</span><span>ไม่ resistant ✗</span></div><div class="cpc-row"><span>Token Protection</span><span>TPM-bound PRT ✓</span></div></div>
+    <div class="ca-policy-card cpc-fail"><div class="cpc-head">⚠ Policy จะ Fail ถ้า...</div><div class="cpc-row"><span>Device non-compliant</span><span>Block ✗</span></div><div class="cpc-row"><span>Device disabled ใน Entra</span><span>Block ✗</span></div><div class="cpc-row"><span>Token expired + offline</span><span>Block ✗</span></div></div>
+  </div>
+</div>
+
+<div id="tab-hospital" class="tab-pane">
+  <p style="margin-top:.5rem">โรงพยาบาลมี use case ซับซ้อน — ทั้ง dedicated laptop ของแพทย์และ shared workstation ที่ nurse station WHfB แบบมาตรฐานตอบโจทย์ไม่ครบ ต้องเลือก solution ให้ถูก</p>
+  <h2>Decision Tree</h2>
+  <div class="dtree">
+    <div class="dt-node dt-q">เครื่องนี้ใช้คนเดียวหรือหลายคน?</div>
+    <div class="dt-line"></div>
+    <div class="dt-branch">
+      <div class="dt-side"><div class="dt-label">คนเดียว</div><div class="dt-line"></div><div class="dt-node dt-a">✓ WHfB (TPM)<br><small style="font-weight:400">PIN / Face / Fingerprint</small></div></div>
+      <div class="dt-side"><div class="dt-label">หลายคน</div><div class="dt-line"></div><div class="dt-node dt-q">รองรับ Shared Device Mode?</div><div class="dt-line"></div>
+        <div class="dt-branch">
+          <div class="dt-side"><div class="dt-label">ใช่</div><div class="dt-line"></div><div class="dt-node dt-b">🔑 FIDO2 + Shared Mode</div></div>
+          <div class="dt-side"><div class="dt-label">ไม่ใช่</div><div class="dt-line"></div><div class="dt-node dt-c">📱 FIDO2 + TAP</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="persona-grid">
+    <div class="persona-card p-dedicated"><div class="pcrd-head">🧑‍⚕️ แพทย์ / IT Admin</div><div class="pcrd-body"><div class="pcrd-row"><span class="pcrd-lbl">Solution</span><span><span class="tag tag-w">WHfB</span> PIN + Face</span></div><div class="pcrd-row"><span class="pcrd-lbl">Cost</span><span>ฟรี — TPM ที่มีอยู่แล้ว</span></div></div></div>
+    <div class="persona-card p-shared"><div class="pcrd-head">👩‍⚕️ พยาบาล / Nurse Station</div><div class="pcrd-body"><div class="pcrd-row"><span class="pcrd-lbl">Solution</span><span><span class="tag tag-f">FIDO2</span> Security key</span></div><div class="pcrd-row"><span class="pcrd-lbl">Fast switch</span><span>ถอด key = lock ทันที</span></div></div></div>
+    <div class="persona-card p-mobile"><div class="pcrd-head">🏃 Staff ย้ายเครื่องบ่อย</div><div class="pcrd-body"><div class="pcrd-row"><span class="pcrd-lbl">Solution</span><span><span class="tag tag-f">FIDO2</span> + <span class="tag tag-t">TAP</span></span></div><div class="pcrd-row"><span class="pcrd-lbl">TAP</span><span>Temporary Access Pass 1-8 ชม.</span></div></div></div>
+    <div class="persona-card p-contractor"><div class="pcrd-head">🧑‍💼 Vendor / Contractor</div><div class="pcrd-body"><div class="pcrd-row"><span class="pcrd-lbl">Solution</span><span><span class="tag tag-f">FIDO2</span> หรือ Passkey</span></div><div class="pcrd-row"><span class="pcrd-lbl">WHfB?</span><span><span class="tag tag-no">ไม่ได้</span> ต้อง AAD Joined</span></div></div></div>
+  </div>
+  <div class="callout tip" style="margin-top:1.25rem"><span class="label">✅ ตอบ Consultant ที่เสนอ YubiKey ให้ทุกคน</span><p>"แพทย์และ IT staff 70-80% ใช้ WHfB ฟรีบน dedicated laptop FIDO2 ซื้อเฉพาะ Nurse Station และ ward staff ที่ย้ายเครื่อง ซึ่งมีประมาณ 20-30% เท่านั้น"</p></div>
+</div>
+</div>

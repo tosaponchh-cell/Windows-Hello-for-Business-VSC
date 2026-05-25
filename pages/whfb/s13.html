@@ -1,0 +1,26 @@
+<div class="page-header">
+  <div class="ph-num">13 — ADVANCED</div>
+  <h1>WHfB vs FIDO2 Security Keys</h1>
+  <p class="ph-sub">เลือกให้ถูก use case — อย่าซื้อ hardware token ให้ทุกคนโดยไม่จำเป็น</p>
+</div>
+<div class="tbl-wrap"><table>
+  <tr><th>มิติ</th><th>WHfB (TPM-based)</th><th>FIDO2 Security Key</th></tr>
+  <tr><td>ค่าใช้จ่าย</td><td class="good">ฟรี — ใช้ TPM ที่มีอยู่แล้ว</td><td class="bad">$25–$70 ต่อ key</td></tr>
+  <tr><td>Platform</td><td class="warn">Windows + TPM 2.0 เท่านั้น</td><td class="good">Windows, macOS, Linux, iOS, Android</td></tr>
+  <tr><td>Shared PC / Kiosk</td><td class="bad">ไม่เหมาะ (ผูกกับ 1 เครื่อง)</td><td class="good">เหมาะมาก (พก key ไปทุกเครื่อง)</td></tr>
+  <tr><td>ย้ายเครื่องบ่อย</td><td class="bad">ไม่สะดวก</td><td class="good">พก key ก้อนเดียวใช้ได้ทุกที่</td></tr>
+  <tr><td>Lost / Stolen</td><td class="good">key อยู่ใน TPM ขโมยไม่ได้</td><td class="bad">ทำหาย = revoke + issue ใหม่</td></tr>
+  <tr><td>Biometric</td><td class="good">Windows Hello built-in</td><td class="warn">เฉพาะ key ที่มี bio sensor</td></tr>
+  <tr><td>On-prem Kerberos</td><td class="good">Key Trust / Cloud Kerberos</td><td class="warn">จำกัด</td></tr>
+  <tr><td>Admin overhead</td><td class="good">ต่ำ (Intune/GPO)</td><td class="warn">สูงกว่า (inventory, lost key)</td></tr>
+</table></div>
+<h2>Use Case Matrix</h2>
+<div class="tbl-wrap"><table>
+  <tr><th>User Profile</th><th>คำแนะนำ</th><th>เหตุผล</th></tr>
+  <tr><td>พนักงานทั่วไป (1 คน 1 เครื่อง)</td><td class="good">WHfB เท่านั้น</td><td>ฟรี, ปลอดภัย, ไม่มีของหาย</td></tr>
+  <tr><td>IT Admin / Privileged user</td><td class="good">WHfB + FIDO2 (backup)</td><td>FIDO2 ใช้เมื่อต้องเข้าเครื่องอื่น</td></tr>
+  <tr><td>Kiosk / Shared workstation</td><td class="good">FIDO2</td><td>WHfB ผูกเครื่อง ใช้กับ shared ไม่ได้</td></tr>
+  <tr><td>Remote / WFH (corporate laptop)</td><td class="good">WHfB เท่านั้น</td><td>TPM พร้อม ไม่ต้องซื้อเพิ่ม</td></tr>
+  <tr><td>Contractor / BYOD</td><td class="good">FIDO2 หรือ Passkey</td><td>WHfB ต้องการ device ที่ join domain</td></tr>
+</table></div>
+<div class="callout tip"><span class="label">✅ ประโยคเด็ด — Cost Optimization</span><p>"WHfB ครอบ user 90% ขององค์กรเราไปแล้วฟรี ๆ เพราะทุกเครื่องมี TPM 2.0 ตามมาตรฐาน Windows 11 ส่วน FIDO2 ซื้อเฉพาะ shared workstation และ admin account ที่ต้องย้ายเครื่องจริง ๆ ซึ่งมีประมาณ 10-15% เท่านั้น"</p></div>

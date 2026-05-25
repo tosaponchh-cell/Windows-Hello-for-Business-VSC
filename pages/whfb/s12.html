@@ -1,0 +1,32 @@
+<div class="page-header">
+  <div class="ph-num">12 — ADVANCED</div>
+  <h1>Hardware Lifecycle</h1>
+  <p class="ph-sub">TPM Clear, เปลี่ยนเมนบอร์ด และการ cleanup stale keys ใน AD / Entra ID</p>
+</div>
+<p>WHfB private key มี <code>fixedTPM=1</code> — ผูกกับ Storage Root Key (SRK) ของ TPM นั้น เมื่อ TPM ถูก clear หรือ chip เสียหาย SRK หาย → ทุก key ที่ลูกหลาน SRK หายตามทันที ไม่มีกลไก backup หรือ export</p>
+<pre><span class="cm">// WHfB Key Hierarchy ใน TPM</span>
+<span class="ct">TPM Storage Root Key (SRK)</span>          <span class="cm">← Hardware-fused, non-exportable</span>
+  └─ <span class="ct">Owner Hierarchy</span>
+       └─ <span class="ct">NGC Container</span> (per user)
+            └─ <span class="ck">WHfB private key</span>   <span class="cm">← fixedTPM=1, fixedParent=1</span>
+
+<span class="cm">// key หายเมื่อ: เปลี่ยน motherboard, Clear TPM, Reimaging</span></pre>
+
+<h2>Procedure เมื่อเปลี่ยนเมนบอร์ด</h2>
+<div class="flow-steps">
+  <div class="flow-step"><div class="step-num">1</div><div class="step-body"><strong>Note NgcKeyId เดิม</strong><p>บันทึกจาก <code>dsregcmd /status</code> → NgcKeyId สำหรับ manual cleanup ทีหลัง</p></div></div>
+  <div class="flow-step"><div class="step-num">2</div><div class="step-body"><strong>Hybrid AAD Rejoin (ถ้าจำเป็น)</strong><p>ตรวจ <code>dsregcmd /status</code> → ถ้า AzureAdJoined=NO ต้อง rejoin ก่อน</p></div></div>
+  <div class="flow-step"><div class="step-num">3</div><div class="step-body"><strong>User Sign-In → Provisioning ใหม่</strong><p>sign-in ด้วย password ครั้งเดียว → WHfB wizard → MFA → key pair ใหม่</p></div></div>
+  <div class="flow-step"><div class="step-num">4</div><div class="step-body"><strong>Cleanup Orphaned Key</strong><p>key เก่าใน <code>msDS-KeyCredentialLink</code> กลายเป็น orphan → ลบออกเพื่อ hygiene</p></div></div>
+</div>
+<h2>Cleanup Commands</h2>
+<pre><span class="cm">// DSInternals module</span>
+<span class="ck">Install-Module</span> DSInternals -Force
+<span class="ck">Get-ADKeyCredential</span> -Identity user01 | Select-Object DeviceId, CreationTime
+<span class="ck">Remove-ADKeyCredential</span> -Identity user01 -DeviceId <span class="cs">"{old-guid}"</span>
+
+<span class="cm">// Entra ID (Microsoft Graph)</span>
+<span class="ck">Get-MgUserAuthenticationWindowsHelloForBusinessMethod</span> -UserId user01@corp.com
+<span class="ck">Remove-MgUserAuthenticationWindowsHelloForBusinessMethod</span> `
+    -UserId <span class="cs">user01@corp.com</span> -WindowsHelloForBusinessAuthenticationMethodId <span class="cs">"{id}"</span></pre>
+<div class="callout warn"><span class="label">⚠ Suspend BitLocker ก่อนทำ TPM Operations</span><p>BitLocker recovery key ที่ seal ไว้กับ TPM PCR values อาจเจอปัญหาถ้าทำ TPM clear โดยไม่ suspend ก่อน</p></div>

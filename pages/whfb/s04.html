@@ -1,0 +1,54 @@
+<div class="page-header">
+  <div class="ph-num">04 — CRYPTO INTERNALS</div>
+  <h1>Certificate Trust — X.509, CSR &amp; Chain Validation</h1>
+  <p class="ph-sub">ข้อมูลที่ถูก hash ในแต่ละขั้นตอน ตั้งแต่ CSR จนถึง CA signing และ chain validation</p>
+</div>
+<h2>4.1 CSR — ข้อมูลที่ถูก Hash แล้วเซ็น</h2>
+<pre><span class="cn">Step 1:</span> tbsBytes = <span class="ch">DER_Encode</span>( CertificationRequestInfo {
+    version:      <span class="cn">0</span>,
+    subject:      CN=user@domain.com,
+    subjectPKInfo: { algorithm: id-ecPublicKey, publicKey: &lt;WHfB_pubkey&gt; },
+    attributes: extensionRequest {
+        subjectAltName: UPN: user@domain.com,
+        keyUsage:       digitalSignature,
+        extKeyUsage:    [smartcardLogon, clientAuth],
+        certTemplate:   &lt;WHfB template name&gt;
+    }
+})
+<span class="cn">Step 2:</span> digest    = <span class="ch">SHA256</span>(tbsBytes)
+<span class="cn">Step 3:</span> signature = <span class="ch">ECDSA_Sign</span>(WHfB_privateKey, digest)</pre>
+
+<h2>4.2 TBSCertificate — สิ่งที่ CA Hash ก่อน Sign</h2>
+<div class="struct-box">
+  <div class="struct-header">TBSCertificate — ข้อมูลทั้งหมดในลายเซ็น CA</div>
+  <div class="struct-row"><div class="sfld" style="width:180px;min-width:180px">version</div><div class="styp">INTEGER [2]</div><div class="sdsc">2 = v3 (รองรับ extensions)</div></div>
+  <div class="struct-row"><div class="sfld" style="width:180px;min-width:180px">serialNumber</div><div class="styp">INTEGER</div><div class="sdsc">unique ต่อ CA</div></div>
+  <div class="struct-row"><div class="sfld" style="width:180px;min-width:180px">issuer</div><div class="styp">Name</div><div class="sdsc">CN=Corp-CA, DC=corp, DC=local</div></div>
+  <div class="struct-row"><div class="sfld" style="width:180px;min-width:180px">validity</div><div class="styp">Validity</div><div class="sdsc">notBefore / notAfter — WHfB cert อายุ 1 ปี auto-renew</div></div>
+  <div class="struct-row"><div class="sfld" style="width:180px;min-width:180px">subject</div><div class="styp">Name</div><div class="sdsc">CN=user@domain.com</div></div>
+  <div class="struct-row"><div class="sfld" style="width:180px;min-width:180px">subjectPublicKeyInfo</div><div class="styp">SubjectPublicKeyInfo</div><div class="sdsc"><strong>WHfB public key จาก TPM</strong></div></div>
+  <div class="struct-row"><div class="sfld" style="width:180px;min-width:180px">extensions</div><div class="styp">Extensions</div><div class="sdsc">keyUsage, extKeyUsage, SAN, CDP, AIA, certTemplate...</div></div>
+</div>
+<pre><span class="cn">Step 1:</span> tbsCertBytes = <span class="ch">DER_Encode</span>(TBSCertificate)
+<span class="cn">Step 2:</span> certDigest   = <span class="ch">SHA256</span>(tbsCertBytes)
+<span class="cn">Step 3:</span> caSignature  = <span class="ch">RSA_PKCS1_Sign</span>(CA_privateKey, certDigest)</pre>
+
+<h2>4.3 Chain Validation — 6 ขั้นตอน</h2>
+<div class="flow-steps">
+  <div class="flow-step"><div class="step-num">1</div><div class="step-body"><strong>Signature Verification</strong><p>ดึง issuer cert → SHA256(TBSCertificate) → verify ด้วย issuer's public key</p></div></div>
+  <div class="flow-step"><div class="step-num">2</div><div class="step-body"><strong>Validity Period</strong><p>ตรวจ notBefore ≤ now ≤ notAfter ทุก cert ในสาย รวมถึง CA cert</p></div></div>
+  <div class="flow-step"><div class="step-num">3</div><div class="step-body"><strong>Revocation (CRL / OCSP)</strong><p>ดึง CRL จาก CDP extension หรือ query OCSP จาก AIA → ตรวจ serial number</p></div></div>
+  <div class="flow-step"><div class="step-num">4</div><div class="step-body"><strong>NTAuth Store</strong><p>Root CA ต้องอยู่ใน <code>CN=NTAuthCertificates</code> ใน AD — ถ้าไม่มี DC reject</p></div></div>
+  <div class="flow-step"><div class="step-num">5</div><div class="step-body"><strong>EKU Validation</strong><p>ต้องมี Smartcard Logon OID <code>1.3.6.1.4.1.311.20.2.2</code></p></div></div>
+  <div class="flow-step"><div class="step-num">6</div><div class="step-body"><strong>Subject Mapping</strong><p>DC map cert → AD user โดยใช้ UPN ใน SAN → <code>userPrincipalName</code> attribute</p></div></div>
+</div>
+
+<h2>4.4 OIDs สำคัญ</h2>
+<div class="tbl-wrap"><table>
+  <tr><th>OID</th><th>ชื่อ</th><th>ความสำคัญ</th></tr>
+  <tr><td><code>1.3.6.1.4.1.311.20.2.2</code></td><td>Smartcard Logon</td><td>บังคับสำหรับ Certificate Trust WHfB</td></tr>
+  <tr><td><code>1.3.6.1.5.5.7.3.2</code></td><td>Client Authentication</td><td>TLS client auth</td></tr>
+  <tr><td><code>1.3.6.1.4.1.311.21.7</code></td><td>Certificate Template</td><td>ระบุ WHfB template</td></tr>
+  <tr><td><code>1.3.6.1.4.1.311.25.2</code></td><td>NT SID Extension</td><td>SID ของ user (Server 2022+) ป้องกัน cert spoofing</td></tr>
+</table></div>
+<div class="callout warn"><span class="label">⚠ KB5014754 — Strong Certificate Binding (2022)</span><p>ตั้งแต่ May 2022 DC require SID extension ใน cert ถ้า CA ไม่ issue ให้ อาจต้อง configure compatibility mode ใน registry</p></div>

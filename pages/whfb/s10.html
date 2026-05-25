@@ -1,0 +1,35 @@
+<div class="page-header">
+  <div class="ph-num">10 — ADVANCED</div>
+  <h1>PRT &amp; Cloud SSO</h1>
+  <p class="ph-sub">Primary Refresh Token คือหัวใจของ Cloud SSO — ผูกกับ TPM session key ทำให้ขโมยไม่ได้</p>
+</div>
+<div class="callout info"><span class="label">💡 PRT คืออะไร</span><p>PRT เป็น long-lived token (อายุ 14 วัน ต่ออายุได้ถึง 90 วัน) ที่ Entra ID ออกให้กับ user + device คู่นั้น ใช้แลกเป็น Access Token สำหรับ M365, SharePoint, Teams ได้ทั้งหมดผ่าน Web Account Manager (WAM)</p></div>
+<h2>PRT Request Flow ขณะ WHfB Login</h2>
+<div class="flow-steps">
+  <div class="flow-step"><div class="step-num">1</div><div class="step-body"><strong>TPM Unlock</strong><p>WHfB private key พร้อม — CloudAP plugin ใน Windows ถูกเรียกพร้อมกัน</p></div></div>
+  <div class="flow-step"><div class="step-num">2</div><div class="step-body"><strong>Request ไป DRS</strong><p>ส่งไปที่ Device Registration Service (<code>enterpriseregistration.windows.net</code>) พร้อม User identity + Device identity + Nonce</p></div></div>
+  <div class="flow-step"><div class="step-num">3</div><div class="step-body"><strong>WHfB Private Key เซ็น Nonce</strong><p>TPM เซ็น nonce → Entra ID verify ด้วย registered public key</p></div></div>
+  <div class="flow-step"><div class="step-num">4</div><div class="step-body"><strong>DRS ออก PRT + Session Key</strong><p>Entra ID ออก PRT (JWT) + session_key (AES-256) — session_key ถูก encrypt ด้วย transport key ของ device → TPM เท่านั้น decrypt ได้</p></div></div>
+  <div class="flow-step"><div class="step-num">5</div><div class="step-body"><strong>TPM Decrypt Session Key</strong><p>session_key ใช้งานได้ใน memory แต่ไม่เคย expose เป็น plaintext</p></div></div>
+  <div class="flow-step"><div class="step-num">6</div><div class="step-body"><strong>PRT เก็บใน LSASS Cache</strong><p>WAM ดูแลการแลก PRT เป็น Access Token ทุก app อัตโนมัติ</p></div></div>
+</div>
+<h2>PRT Cookie — ทำไมขโมย PRT แล้วก็ยังใช้ไม่ได้</h2>
+<pre><span class="cm">// PRT JWT payload claims</span>
+{ <span class="ck">"amr"</span>: [<span class="cs">"ngcmfa"</span>], <span class="ck">"device_id"</span>: <span class="cs">"{GUID}"</span>, <span class="ck">"exp"</span>: <span class="cv">&lt;+14 days&gt;</span> }
+
+<span class="cm">// ทุกครั้งที่แลก Access Token ต้องแนบ PRT Cookie</span>
+<span class="ct">PRT Cookie</span> = <span class="ch">Base64Url</span>({
+    <span class="ck">"request_nonce"</span>: &lt;nonce จาก Entra — ป้องกัน replay&gt;,
+    <span class="ck">"iat"</span>:           &lt;timestamp&gt;
+}, signed_with = <span class="ch">HMAC_SHA256</span>(session_key, header||payload))
+<span class="cm">// session_key อยู่ใน TPM-protected memory เท่านั้น</span>
+<span class="cm">// ขโมย PRT แต่ไม่มีเครื่อง → ทำ PRT cookie ไม่ได้</span></pre>
+<h2>amr Claims — WHfB = MFA ในสายตา Entra</h2>
+<div class="tbl-wrap"><table>
+  <tr><th>amr value</th><th>ความหมาย</th><th>MFA level</th></tr>
+  <tr><td><code>ngcmfa</code></td><td>Windows Hello for Business</td><td class="good">✓ MFA satisfied</td></tr>
+  <tr><td><code>pwd</code></td><td>Password only</td><td class="bad">✗ ต้อง step-up MFA</td></tr>
+  <tr><td><code>mfa</code></td><td>Password + Authenticator app</td><td class="good">✓ MFA satisfied</td></tr>
+  <tr><td><code>fido</code></td><td>FIDO2 security key</td><td class="good">✓ MFA satisfied</td></tr>
+</table></div>
+<div class="callout tip"><span class="label">✅ ตอบ Consultant</span><p>"Cloud SSO ทำงานผ่าน PRT ที่ออกพร้อมกับ WHfB login session_key ของ PRT ถูก protect ด้วย TPM transport key — แม้ PRT ถูกขโมย ก็ทำ SSO แทนไม่ได้เพราะต้องใช้ TPM ของเครื่องนั้นเซ็น PRT cookie ทุกครั้ง"</p></div>

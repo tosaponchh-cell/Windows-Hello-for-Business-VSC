@@ -1,0 +1,33 @@
+<div class="page-header">
+  <div class="ph-num" style="background:#1b5e20">04 — PKI BUILD</div>
+  <h1>Sign Request &amp; Install Certificate</h1>
+  <p class="ph-sub">Section 3: Sign .req บน ROOTCA → Section 4: Install .cer บน ISSUINGCA</p>
+</div>
+
+<h2>Section 3 — Sign .req บน ROOTCA (.req → .cer)</h2>
+<div class="callout info"><span class="label">📌 INFO</span><p>ทำบน <strong>ROOTCA</strong> — เปิดเครื่องเฉพาะ section นี้ Shut down ทันทีหลัง export .cer</p></div>
+<div class="flow-steps">
+  <div class="flow-step"><div class="step-num">1</div><div class="step-body"><strong>Copy .req ไปที่ ROOTCA</strong><p>Power on ROOTCA → Copy <code>ISSUINGCA.req</code> จาก ISSUINGCA ไปที่ ROOTCA Desktop หรือ <code>C:\Certs\</code></p></div></div>
+  <div class="flow-step"><div class="step-num">2</div><div class="step-body"><strong>Submit .req ไปที่ Root CA</strong><p>Open <code>certsrv.msc</code> บน ROOTCA → Right-click CA name → All Tasks → <strong>Submit new request...</strong> → เลือก .req file</p></div></div>
+  <div class="flow-step"><div class="step-num">3</div><div class="step-body"><strong>Issue the Certificate</strong><p>Click <em>Pending Requests</em> → Right-click request → All Tasks → <strong>Issue</strong><br>Request ย้ายไป Issued Certificates = approved</p></div></div>
+  <div class="flow-step"><div class="step-num">4</div><div class="step-body"><strong>Export .cer File</strong><p>Click Issued Certificates → Double-click cert → Details → <strong>Copy to File...</strong><br>Format: <strong>Base-64 encoded X.509 (.CER)</strong> — ห้ามเลือก DER<br>Save as: <code>IssuingCA_Signed.cer</code></p></div></div>
+  <div class="flow-step"><div class="step-num">5</div><div class="step-body"><strong>Copy .cer กลับ ISSUINGCA แล้ว Shut Down ROOTCA</strong><p>Copy <code>IssuingCA_Signed.cer</code> ไปที่ ISSUINGCA (<code>C:\Certs\</code>) แล้ว shut down ROOTCA ทันที</p></div></div>
+</div>
+<div class="callout warn"><span class="label">⚠ Export Format สำคัญมาก</span><p>ต้องเลือก <strong>Base-64 encoded X.509 (.CER)</strong> เท่านั้น — ถ้าเลือก DER แล้ว ISSUINGCA จะไม่สามารถ install ได้ในขั้นตอนต่อไป</p></div>
+
+<h2>Section 4 — Install .cer บน ISSUINGCA &amp; Start Service</h2>
+<div class="callout info"><span class="label">📌 INFO</span><p>ทำบน <strong>ISSUINGCA</strong> — หลัง section นี้ CA service ควรแสดงสถานะ running (green)</p></div>
+<div class="flow-steps">
+  <div class="flow-step"><div class="step-num">1</div><div class="step-body"><strong>Install CA Certificate</strong><p><code>certsrv.msc</code> บน ISSUINGCA → Right-click CA name → All Tasks → <strong>Install CA Certificate...</strong><br>เลือก <code>IssuingCA_Signed.cer</code> จาก <code>C:\Certs\</code></p></div></div>
+  <div class="flow-step"><div class="step-num">2</div><div class="step-body"><strong>Start the Service</strong><p>Right-click CA name → All Tasks → <strong>Start Service</strong><br>ไอคอนควรเปลี่ยนเป็นสีเขียวแสดงว่า CA กำลัง running</p></div></div>
+  <div class="flow-step"><div class="step-num">3</div><div class="step-body"><strong>Publish Issuing CA CRL</strong><p>หลัง service start: Right-click <em>Revoked Certificates</em> → All Tasks → Publish → <strong>New CRL</strong><br>ทำให้ CLIENT01 และ DC01 สามารถ download CRL ของ Issuing CA ได้</p></div></div>
+</div>
+
+<h2>Health Check ก่อน Continue</h2>
+<div class="tbl-wrap"><table>
+  <tr><th>สิ่งที่ตรวจ</th><th>Expected</th></tr>
+  <tr><td>certsrv.msc icon</td><td class="good">Running / no red X</td></tr>
+  <tr><td>Event Viewer → Application log</td><td class="good">No errors from source: CertSvc</td></tr>
+  <tr><td><code>certutil -ping</code></td><td class="good">CertUtil: -ping command completed successfully</td></tr>
+</table></div>
+<div class="callout warn"><span class="label">⚠ CA Service Starts Then Stops</span><p>ถ้า CA service start แล้วหยุดทันที: มี expired CRL อยู่ใน local store<br>Fix: <code>certlm.msc</code> → ลบ expired CRL จาก Trusted Root → Certificate Revocation Lists → <strong>restart VM</strong> (ไม่ใช่แค่ restart service)</p></div>

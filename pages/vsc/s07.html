@@ -1,0 +1,24 @@
+<div class="page-header">
+  <div class="ph-num" style="background:#1b5e20">07 — VSC SETUP</div>
+  <h1>Certificate Enrollment</h1>
+  <p class="ph-sub">ต้อง login เป็น LabUser01 (domain user) ไม่ใช่ Administrator</p>
+</div>
+<div class="callout warn"><span class="label">⚠ CRITICAL — Login เป็น User ถูกต้อง</span><p>Enrollment ต้องทำขณะ login เป็น <strong>LabUser01</strong> เท่านั้น ไม่ใช่ Administrator cert ต้องอยู่ใน LabUser01's Personal store มิฉะนั้น Smart Card login จะล้มเหลว</p></div>
+
+<h2>Enrollment Flow</h2>
+<div class="flow-steps">
+  <div class="flow-step"><div class="step-num">1</div><div class="step-body"><strong>Log In เป็น LabUser01</strong><p>Log off หรือ switch user → click <em>Other user</em><br>Username: <code>lab\LabUser01</code> | Password: [AD password]</p></div></div>
+  <div class="flow-step"><div class="step-num">2</div><div class="step-body"><strong>Open certmgr.msc (User Store)</strong><p>Windows + R → <code>certmgr.msc</code> → Enter<br>นี่คือ Current <strong>User</strong> certificate store (ไม่ใช่ local machine store)</p></div></div>
+  <div class="flow-step"><div class="step-num">3</div><div class="step-body"><strong>Request New Certificate</strong><p>ขยาย <em>Personal</em> → Right-click <em>Certificates</em> → All Tasks → <strong>Request New Certificate...</strong><br>Click Next → Select Active Directory Enrollment Policy → Next<br>Tick <strong>Lab SmartcardLogon01</strong> → Click <strong>Enroll</strong></p></div></div>
+  <div class="flow-step"><div class="step-num">4</div><div class="step-body"><strong>Enter PIN เมื่อถูกถาม</strong><p>Windows Security dialog ปรากฏขึ้นขอ smart card PIN<br>Enter: <code>12345678</code> (ถ้าใช้ /pin default) → Click OK</p></div></div>
+  <div class="flow-step"><div class="step-num">5</div><div class="step-body"><strong>Verify Success</strong><p>Status: <strong>Succeeded</strong> → click Finish<br>ใน certmgr.msc → Personal → Certificates: cert ของ LabUser01 issued by LAB-IssuingCA ต้องปรากฏ<br>Double-click cert → Details → Enhanced Key Usage: <strong>Smart Card Logon + Client Authentication</strong><br>Subject Alternative Name: <code>LabUser01@lab.local</code></p></div></div>
+</div>
+
+<h2>Scenarios</h2>
+<div class="tbl-wrap"><table>
+  <tr><th>Scenario</th><th>Result</th><th>Root Cause</th><th>Solution</th></tr>
+  <tr><td class="good">A — OK</td><td>Status: Succeeded. Cert in Personal store</td><td>All correct</td><td>→ Section 8</td></tr>
+  <tr><td class="bad">B — Template not visible</td><td>Lab SmartcardLogon01 missing</td><td>Not published or no Enroll right</td><td>ISSUINGCA: publish template, Security tab → add Enroll</td></tr>
+  <tr><td class="warn">C — No PIN prompt</td><td>Enrollment completes without PIN</td><td>Wrong provider in template</td><td>Template Cryptography: Microsoft Smart Card Key Storage Provider only</td></tr>
+  <tr><td class="bad">D — No smart card reader error</td><td>Error: no reader available</td><td>VSC missing</td><td>→ Section 6: Re-create VSC</td></tr>
+</table></div>

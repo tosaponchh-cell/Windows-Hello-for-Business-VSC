@@ -1,0 +1,68 @@
+<div class="page-header">
+  <div class="ph-num" style="background:#1b5e20">10 — OPERATIONS</div>
+  <h1>Command Quick Reference</h1>
+  <p class="ph-sub">คำสั่งทั้งหมดแบ่งตาม category — bookmark ไว้ใช้เวลา troubleshoot</p>
+</div>
+
+<h2>VSC Management</h2>
+<pre><span class="cm">// Create VSC with default PIN 12345678</span>
+<span class="ck">tpmvscmgr.exe create /name "LabVSC" /pin default /adminkey random /generate</span>
+
+<span class="cm">// Create VSC with custom PIN (minimum 8 chars)</span>
+<span class="ck">tpmvscmgr.exe create /name "LabVSC" /pin prompt /adminkey random /generate</span>
+
+<span class="cm">// Delete VSC by instance ID</span>
+<span class="ck">tpmvscmgr.exe destroy /instance ROOT\SMARTCARDREADER\0000</span></pre>
+
+<h2>Publishing &amp; Importing</h2>
+<pre><span class="cm">// Publish Root CA cert ลง Active Directory</span>
+<span class="ck">certutil -dspublish -f "file.crt" RootCA</span>
+
+<span class="cm">// Publish Root CA CRL ลง Active Directory</span>
+<span class="ck">certutil -dspublish -f "file.crl" RootCA</span>
+
+<span class="cm">// Import cert ลง Local Machine Trusted Root store</span>
+<span class="ck">certutil -addstore -f root "file.crt"</span>
+
+<span class="cm">// Import CRL ลง Local Machine Trusted Root store</span>
+<span class="ck">certutil -addstore -f root "file.crl"</span>
+
+<span class="cm">// Import CRL ลง Intermediate CA store</span>
+<span class="ck">certutil -addstore -f CA "file.crl"</span>
+
+<span class="cm">// Delete all cached CRL entries</span>
+<span class="ck">certutil -urlcache crl delete</span>
+
+<span class="cm">// Reset chain cache</span>
+<span class="ck">certutil -setreg chain\ChainCacheResyncFiletime @now</span></pre>
+
+<h2>Diagnostics</h2>
+<pre><span class="cm">// Full VSC scan + chain trace (รัน CLIENT01, ป้อน PIN)</span>
+<span class="ck">certutil -scinfo</span>
+
+<span class="cm">// Show cached CRL entries — ถ้า empty แสดงว่า CRL ไม่เคย download</span>
+<span class="ck">certutil -urlcache crl</span>
+
+<span class="cm">// Verify certificate chain และ revocation status</span>
+<span class="ck">certutil -verify -urlfetch cert.cer</span>
+
+<span class="cm">// Force Issuing CA publish new CRL ทันที</span>
+<span class="ck">certutil -crl</span>
+
+<span class="cm">// Test CA RPC connectivity</span>
+<span class="ck">certutil -ping</span>
+
+<span class="cm">// Flush Kerberos ticket cache</span>
+<span class="ck">klist purge</span></pre>
+
+<h2>Management Consoles</h2>
+<div class="tbl-wrap"><table>
+  <tr><th>Command</th><th>Description</th></tr>
+  <tr><td><code>certsrv.msc</code></td><td>Certification Authority console</td></tr>
+  <tr><td><code>certtmpl.msc</code></td><td>Certificate Templates console</td></tr>
+  <tr><td><code>certmgr.msc</code></td><td>Current USER certificate store (enrollment)</td></tr>
+  <tr><td><code>certlm.msc</code></td><td>LOCAL MACHINE certificate store (CRL / CA stores)</td></tr>
+  <tr><td><code>tpm.msc</code></td><td>TPM Management — verify TPM status</td></tr>
+  <tr><td><code>net stop certsvc</code></td><td>Stop AD Certificate Services</td></tr>
+  <tr><td><code>net start certsvc</code></td><td>Start AD Certificate Services</td></tr>
+</table></div>

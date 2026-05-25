@@ -1,0 +1,33 @@
+<div class="page-header">
+  <div class="ph-num">11 — ADVANCED</div>
+  <h1>PIN Reset Mechanism</h1>
+  <p class="ph-sub">Destructive Reset flow, Cloud PIN Reset Service และความต่างระหว่าง destructive vs non-destructive</p>
+</div>
+<p>PIN reset ใน WHfB เป็นกระบวนการ <strong>Destructive</strong> — key pair เดิมถูกทำลาย แล้วสร้างใหม่ทั้งหมด เพราะ PIN คือ local gesture ที่ protect private key ใน TPM ไม่มีกลไก "unlock PIN เก่าด้วย admin"</p>
+<h2>Destructive Reset Flow</h2>
+<div class="flow-steps">
+  <div class="flow-step"><div class="step-num">1</div><div class="step-body"><strong>ลืม PIN หรือ Lockout</strong><p>พิมพ์ PIN ผิดเกิน threshold (default 5 ครั้ง) TPM จะ lockout ชั่วคราว (anti-hammering)</p></div></div>
+  <div class="flow-step"><div class="step-num">2</div><div class="step-body"><strong>ทำลาย NGC Container</strong><p>NGC container ที่เก็บ WHfB private key ถูก delete ออกจาก TPM โดยสมบูรณ์ — private key ไม่มีในโลกอีกต่อไป</p></div></div>
+  <div class="flow-step"><div class="step-num">3</div><div class="step-body"><strong>MFA Re-verification บังคับ</strong><p>Windows ขอ MFA (Authenticator, TOTP, SMS) ผ่าน Entra ID — ป้องกันคนอื่นทำ PIN reset แทน</p></div></div>
+  <div class="flow-step"><div class="step-num">4</div><div class="step-body"><strong>Provisioning ใหม่ทั้งหมด</strong><p>TPM สร้าง key pair ใหม่ → register public key ใหม่ → เขียนทับ <code>msDS-KeyCredentialLink</code></p></div></div>
+  <div class="flow-step"><div class="step-num">5</div><div class="step-body"><strong>ตั้ง PIN ใหม่ + PRT ใหม่</strong><p>provisioning สำเร็จ → PRT ใหม่ออกให้ → Cloud SSO กลับมาทำงาน</p></div></div>
+</div>
+<h2>เปิด Cloud PIN Reset (Self-Service)</h2>
+<pre><span class="cm">// Intune — PassportForWork CSP</span>
+<span class="ct">./Device/Vendor/MSFT/PassportForWork</span>/{TenantID}/<span class="ck">EnablePinRecovery</span> = <span class="cv">True</span>
+
+<span class="cm">// GPO</span>
+Computer Config → Windows Components → Windows Hello for Business
+  → <span class="ck">Enable PIN Recovery</span> = <span class="cv">Enabled</span>
+<span class="cm">// เมื่อเปิด: สร้าง recovery secret ใน TPM</span>
+<span class="cm">// → reset PIN โดยไม่ต้อง full destructive reset</span>
+<span class="cm">// (key pair เดิมยังอยู่ แค่เปลี่ยน PIN gesture)</span></pre>
+<h2>Destructive vs Non-Destructive</h2>
+<div class="tbl-wrap"><table>
+  <tr><th>สถานการณ์</th><th>ประเภท</th><th>Key pair</th><th>msDS-KeyCredentialLink</th></tr>
+  <tr><td>เปิด PIN Recovery, ลืม PIN</td><td class="good">Non-destructive</td><td class="good">เดิม ยังอยู่</td><td class="good">ไม่เปลี่ยน</td></tr>
+  <tr><td>ปิด PIN Recovery, ลืม PIN</td><td class="bad">Destructive</td><td class="bad">ลบทิ้ง สร้างใหม่</td><td class="bad">เขียนทับ</td></tr>
+  <tr><td>PIN Lockout (ยังจำ PIN ได้)</td><td class="warn">Lockout only</td><td class="good">เดิม ยังอยู่</td><td class="good">ไม่เปลี่ยน</td></tr>
+  <tr><td>Admin force reset</td><td class="bad">Destructive</td><td class="bad">ลบทิ้ง สร้างใหม่</td><td class="bad">เขียนทับ</td></tr>
+</table></div>
+<div class="callout tip"><span class="label">✅ ตอบ Consultant</span><p>"เราเปิด Cloud PIN Reset ไว้แล้ว User กู้ PIN ด้วยตัวเองผ่าน lock screen → I forgot my PIN → verify ด้วย Authenticator → ตั้ง PIN ใหม่ ทำได้ภายใน 2 นาทีโดยไม่โทร Helpdesk"</p></div>

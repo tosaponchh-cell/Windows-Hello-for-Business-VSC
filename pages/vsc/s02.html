@@ -1,0 +1,24 @@
+<div class="page-header">
+  <div class="ph-num" style="background:#1b5e20">02 — PKI BUILD</div>
+  <h1>Build Root CA (ROOTCA)</h1>
+  <p class="ph-sub">ทำบน ROOTCA เท่านั้น — เครื่องนี้ต้องไม่ join domain และต้อง shut down เมื่อไม่ใช้งาน</p>
+</div>
+<div class="callout info"><span class="label">📌 INFO</span><p>ทำบน <strong>ROOTCA</strong> เท่านั้น เครื่องนี้ต้องไม่ join domain — Keep powered off when not in use</p></div>
+
+<h2>Root CA Setup Flow</h2>
+<div class="flow-steps">
+  <div class="flow-step"><div class="step-num">1</div><div class="step-body"><strong>Install AD CS Role</strong><p>Server Manager → Manage → Add Roles and Features → Active Directory Certificate Services<br>Role Services: เลือก <strong>Certification Authority only</strong></p></div></div>
+  <div class="flow-step"><div class="step-num">2</div><div class="step-body"><strong>Configure: Standalone Root CA</strong><p>Click yellow flag → Configure AD CS<br>Setup Type: <strong>Standalone CA</strong> (Enterprise CA greyed out — ROOTCA ไม่ join domain)<br>CA Type: <strong>Root CA</strong> | Private Key: Create new | <strong>RSA 2048, SHA-256</strong><br>CA Name: <code>LAB-RootCA</code> | Validity: 10–20 years</p></div></div>
+  <div class="flow-step"><div class="step-num">3</div><div class="step-body"><strong>Publish CRL ก่อน Export (สำคัญมาก)</strong><p>Open <code>certsrv.msc</code> → Right-click <em>Revoked Certificates</em> → All Tasks → Publish → <strong>New CRL</strong> → OK<br>ถ้าไม่ทำขั้นตอนนี้ CRL อาจหมดอายุก่อนที่จะ export</p></div></div>
+  <div class="flow-step"><div class="step-num">4</div><div class="step-body"><strong>Export ทั้งสองไฟล์และ Copy ออก</strong><p>ไฟล์อยู่ที่: <code>C:\Windows\System32\CertSrv\CertEnroll\</code><br>Copy ทั้งสองไฟล์: <code>LAB-RootCA.crt</code> + <code>LAB-RootCA.crl</code><br>ปลายทาง: ISSUINGCA และ DC01 (ทั้งสองเครื่องต้องการไฟล์เหล่านี้)</p></div></div>
+  <div class="flow-step"><div class="step-num">5</div><div class="step-body"><strong>Shut Down ROOTCA ทันที</strong><p>Shut down ROOTCA ทันทีหลัง copy ไฟล์เสร็จ บันทึก CRL Next Update date และตั้ง calendar reminder</p></div></div>
+</div>
+
+<h2>Scenarios</h2>
+<div class="tbl-wrap"><table>
+  <tr><th>Scenario</th><th>Result</th><th>Root Cause</th><th>Solution</th></tr>
+  <tr><td class="good">A — OK</td><td>certsrv.msc shows CA name</td><td>Configuration correct</td><td>Export files. Shut down ROOTCA. → Section 3</td></tr>
+  <tr><td class="warn">B — Enterprise CA greyed out</td><td>Cannot select Enterprise</td><td>Machine not domain-joined</td><td>Correct — select Standalone CA. ไม่ต้อง join domain</td></tr>
+  <tr><td class="bad">C — .crl not in CertEnroll</td><td>CRL file missing</td><td>CRL not published yet</td><td>certsrv.msc → Revoked Certificates → All Tasks → Publish → New CRL</td></tr>
+</table></div>
+<div class="callout warn"><span class="label">⚠ ห้ามลืม</span><p>ROOTCA ต้อง <strong>offline ตลอดเวลา</strong> — เปิดเฉพาะตอน publish CRL หรือ sign CSR เท่านั้น Private key ของ Root CA คือสิ่งที่ปกป้อง PKI ทั้งหมด</p></div>

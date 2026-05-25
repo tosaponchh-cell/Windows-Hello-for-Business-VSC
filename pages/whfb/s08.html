@@ -1,0 +1,15 @@
+<div class="page-header">
+  <div class="ph-num">08 — OPERATIONS</div>
+  <h1>Authentication Flow</h1>
+  <p class="ph-sub">เปรียบเทียบ flow ทุก login ตาม trust model — ไม่มี password ผ่านเครือข่ายในทุกกรณี</p>
+</div>
+<div class="tbl-wrap"><table>
+  <tr><th>ขั้นตอน</th><th>Cloud Kerberos</th><th>Key Trust</th><th>Certificate Trust</th></tr>
+  <tr><td>1. Gesture</td><td colspan="3">PIN / Biometric unlock TPM access</td></tr>
+  <tr><td>2. Credential provider</td><td colspan="3">NGCCred provider → TPM ปลดล็อค signing key</td></tr>
+  <tr><td>3. Auth target</td><td>Entra ID (cloud-first)</td><td>on-prem DC</td><td>on-prem DC</td></tr>
+  <tr><td>4. Protocol</td><td>PKINIT → Entra Kerberos</td><td>PKINIT → AD Kerberos</td><td>PKINIT (cert) → AD</td></tr>
+  <tr><td>5. On-prem TGT</td><td>Partial TGT → DC exchange</td><td>DC ออกให้โดยตรง</td><td>DC ออกให้โดยตรง</td></tr>
+  <tr><td>6. Cloud Token</td><td>PRT + Entra ID token</td><td>ผ่าน Entra Connect</td><td>ผ่าน Entra Connect</td></tr>
+</table></div>
+<div class="callout info"><span class="label">📌 ไม่มี password บนเครือข่าย</span><p>ทุก trust model ใช้ challenge-response ด้วย asymmetric key pair ไม่มี NTLM hash, ไม่มี password hash, ไม่มี shared secret ส่งผ่านเครือข่าย</p></div>

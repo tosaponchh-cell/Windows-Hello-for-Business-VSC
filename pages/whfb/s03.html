@@ -1,0 +1,40 @@
+<div class="page-header">
+  <div class="ph-num">03 — CRYPTO INTERNALS</div>
+  <h1>TPM Deep Dive</h1>
+  <p class="ph-sub">ข้อมูลอะไรบ้างถูก hash — ตั้งแต่ Key Generation จนถึง Attestation Statement</p>
+</div>
+<h2>3.1 Key Name = Hash ของ publicArea</h2>
+<p>ใน TPM 2.0 ทุก object มี <strong>Name</strong> ซึ่งเป็น <code>Hash(publicArea)</code> ไม่ใช่แค่ GUID — ชื่อนี้ใช้ binding attestation เข้ากับ key จริง</p>
+<pre><span class="cm">// TPM2_Create — สร้าง WHfB key</span>
+<span class="ct">TPMT_PUBLIC</span> <span class="ck">publicArea</span> = {
+    <span class="ck">type</span>:         <span class="cv">TPM_ALG_ECC</span>,
+    <span class="ck">nameAlg</span>:      <span class="cv">TPM_ALG_SHA256</span>,
+    <span class="ck">objectAttributes</span>: {
+        <span class="ck">fixedTPM</span>:     <span class="cn">1</span>,  <span class="cm">// key ออกจาก TPM ไม่ได้</span>
+        <span class="ck">userWithAuth</span>: <span class="cn">1</span>,  <span class="cm">// ต้อง PIN gesture ก่อนใช้</span>
+        <span class="ck">sign</span>:         <span class="cn">1</span>,  <span class="cm">// sign ได้ / decrypt ไม่ได้</span>
+    },
+    <span class="ck">parameters</span>: { <span class="ck">curveID</span>: <span class="cv">TPM_ECC_NIST_P256</span> }
+}
+<span class="ch">Key_Name = 0x000B || SHA256( DER_Serialize(publicArea) )</span>
+<span class="cm">           ↑ 0x000B = TPM_ALG_SHA256 prefix (2 bytes)</span></pre>
+
+<h2>3.2 TPMS_ATTEST — โครงสร้างที่ TPM เซ็น</h2>
+<div class="struct-box">
+  <div class="struct-header">TPMS_ATTEST (TCG Spec Part 2, §10.12.8)</div>
+  <div class="struct-row"><div class="soff">+0</div><div class="sfld">magic</div><div class="styp">UINT32</div><div class="sdsc">0xff544347 ("ÿTCG") — ป้องกัน signature confusion</div></div>
+  <div class="struct-row"><div class="soff">+4</div><div class="sfld">type</div><div class="styp">TPMI_ST_ATTEST</div><div class="sdsc">TPM_ST_ATTEST_CREATION (0x8017)</div></div>
+  <div class="struct-row"><div class="soff">+6</div><div class="sfld">qualifiedSigner</div><div class="styp">TPM2B_NAME</div><div class="sdsc">Name ของ Attestation Key = SHA256(AK_publicArea)</div></div>
+  <div class="struct-row"><div class="soff">+var</div><div class="sfld">extraData</div><div class="styp">TPM2B_DATA</div><div class="sdsc">Nonce จาก Entra ID — ป้องกัน replay</div></div>
+  <div class="struct-row"><div class="soff">+var</div><div class="sfld">firmwareVersion</div><div class="styp">UINT64</div><div class="sdsc">TPM firmware version (Entra ตรวจสอบ)</div></div>
+  <div class="struct-row"><div class="soff">+8</div><div class="sfld">attested.objectName</div><div class="styp">TPM2B_NAME</div><div class="sdsc"><strong>Key_Name ของ WHfB key</strong> = 0x000B||SHA256(publicArea)</div></div>
+  <div class="struct-row"><div class="soff">+var</div><div class="sfld">attested.creationHash</div><div class="styp">TPM2B_DIGEST</div><div class="sdsc">SHA256 ของ TPMS_CREATION_DATA</div></div>
+</div>
+<pre><span class="cm">// ลำดับ hash และ sign จริง</span>
+<span class="cn">Step 1:</span> creationHash = <span class="ch">SHA256</span>( TPMS_CREATION_DATA {
+    pcrDigest:  <span class="ch">SHA256</span>( PCR[0]||PCR[1]||...||PCR[n] ),
+    parentName: <span class="ch">SHA256</span>( SRK_publicArea )
+})
+<span class="cn">Step 2:</span> sig = <span class="ch">ECDSA_Sign</span>( AK_key, <span class="ch">SHA256</span>( marshal(TPMS_ATTEST) ) )
+<span class="cn">Step 3:</span> ส่ง { TPMS_ATTEST, sig, aikCert, WHfB_publicKey } → Entra ID</pre>
+<div class="callout info"><span class="label">💡 Key Name ทำให้ attestation น่าเชื่อถือ</span><p>เวลา TPM ออก attestation มันรวม <code>objectName = SHA256(publicArea)</code> ไว้ด้วย ทำให้ Entra ID มั่นใจว่า public key ที่ลงทะเบียนตรงกับ key ใน TPM จริง ๆ</p></div>

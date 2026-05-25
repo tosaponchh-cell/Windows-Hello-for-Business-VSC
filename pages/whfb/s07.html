@@ -1,0 +1,14 @@
+<div class="page-header">
+  <div class="ph-num">07 — OPERATIONS</div>
+  <h1>Provisioning Flow — Hybrid AAD</h1>
+  <p class="ph-sub">ขั้นตอนตั้งแต่ login ครั้งแรกจนได้ WHfB credential — ทุก trust model ใช้ core flow เดียวกัน</p>
+</div>
+<div class="flow-steps">
+  <div class="flow-step"><div class="step-num">1</div><div class="step-body"><strong>Trigger: First Sign-In + Policy</strong><p>WHfB provisioning เปิดหลัง user sign-in เมื่อ device เป็น Hybrid AAD Joined และมี WHfB policy (GPO หรือ Intune MDM)</p></div></div>
+  <div class="flow-step"><div class="step-num">2</div><div class="step-body"><strong>MFA Verification (บังคับ)</strong><p>Windows ขอ MFA ผ่าน Entra ID Conditional Access ก่อนสร้าง key ทุกครั้ง</p></div></div>
+  <div class="flow-step"><div class="step-num">3</div><div class="step-body"><strong>TPM Key Generation</strong><p><code>TPM2_Create</code> สร้าง ECC P-256 key pair ภายใน TPM ภายใต้ Storage Root Key (SRK) — private key ไม่ออกจาก TPM เลย</p></div></div>
+  <div class="flow-step"><div class="step-num">4</div><div class="step-body"><strong>Attestation</strong><p><code>TPM2_CertifyCreation</code> สร้าง attestation statement → ส่งพร้อม public key ให้ Entra ID ตรวจ firmware + manufacturer cert chain</p></div></div>
+  <div class="flow-step"><div class="step-num">5</div><div class="step-body"><strong>Public Key Registration</strong><p><em>Cloud Kerberos / Key Trust:</em> public key ลงทะเบียนกับ Entra ID → sync ลง AD → เขียน <code>msDS-KeyCredentialLink</code><br><em>Certificate Trust:</em> CSR ส่งไป CA via NDES → cert เก็บใน user store</p></div></div>
+  <div class="flow-step"><div class="step-num">6</div><div class="step-body"><strong>PIN / Biometric Setup</strong><p>User ตั้ง PIN (6+ digits) หรือ fingerprint/face — เป็น local gesture ที่ unlock private key ใน TPM</p></div></div>
+  <div class="flow-step"><div class="step-num">7</div><div class="step-body"><strong>Verification &amp; Complete</strong><p>Windows ทดสอบ credential ด้วย sign operation จริง → ถ้าผ่าน log Event 1001 → provisioning สำเร็จ</p></div></div>
+</div>

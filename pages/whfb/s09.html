@@ -1,0 +1,61 @@
+<div class="page-header">
+  <div class="ph-num">09 — OPERATIONS</div>
+  <h1>Troubleshooting &amp; Event Logs</h1>
+  <p class="ph-sub">Event IDs หลัก, Diagnostic Commands และ Error Codes ที่พบบ่อย</p>
+</div>
+<h2>Event Logs ที่ต้องดู</h2>
+<div class="eventlog">
+  <div class="eventlog-header"><span class="eid">Event 1001</span><span>WHfB Provisioning OK — HelloForBusiness/Operational</span></div>
+  <div class="eventlog-body"><span class="el-key">KeyID:</span>     <span class="el-ok">{SHA256 hash of public key}</span>
+<span class="el-key">KeySource:</span> <span class="el-val">0=AD  |  1=AzureAD</span></div>
+</div>
+<div class="eventlog">
+  <div class="eventlog-header"><span class="eid">Event 1002</span><span>WHfB Provisioning FAILED — HelloForBusiness/Operational</span></div>
+  <div class="eventlog-body"><span class="el-key">ErrorCode:</span> <span class="el-err">0x801C03ED</span>
+<span class="el-key">Cause:</span>     <span class="el-val">MFA ไม่ผ่าน, CA policy ปิดกั้น, device ยังไม่ registered</span></div>
+</div>
+<div class="eventlog">
+  <div class="eventlog-header"><span class="eid">Event 4768</span><span>Kerberos TGT — Security Log (บน DC)</span></div>
+  <div class="eventlog-body"><span class="el-key">PreAuthType:</span> <span class="el-ok">16 = PKINIT</span>  <span class="el-val">← WHfB ทำงาน (ไม่ใช่ password)</span>
+<span class="el-key">Result Code:</span> <span class="el-ok">0x0</span> = Success</div>
+</div>
+<div class="eventlog">
+  <div class="eventlog-header"><span class="eid">Event 5061</span><span>Cryptographic Operation — System Log</span></div>
+  <div class="eventlog-body"><span class="el-key">Algorithm:</span> <span class="el-ok">ECDSA_P256</span>
+<span class="el-key">Result:</span>    <span class="el-ok">0x0</span>  <span class="el-val">← ทุก sign operation log ที่นี่</span></div>
+</div>
+
+<h2>Diagnostic Commands</h2>
+<pre><span class="ck">dsregcmd /status</span>
+<span class="cm">// AzureAdJoined:YES + DomainJoined:YES = Hybrid OK</span>
+<span class="cm">// NgcSet:YES = WHfB provisioned | NgcKeyId:{GUID}</span>
+<span class="cm">// AzureAdPrt:YES = PRT มีอยู่</span>
+
+<span class="ck">klist</span>            <span class="cm">// TGT ปัจจุบัน</span>
+<span class="ck">klist purge</span>      <span class="cm">// ล้าง ticket cache</span>
+
+<span class="ck">Get-WinEvent</span> -LogName <span class="cs">"Microsoft-Windows-HelloForBusiness/Operational"</span> | Select-Object -First 20
+
+<span class="ck">Get-ADUser</span> -Identity username -Properties <span class="cs">"msDS-KeyCredentialLink"</span>
+
+<span class="ck">certutil -deleteHelloContainer</span>  <span class="cm">// บังคับ re-provision</span>
+<span class="ck">certutil -scinfo</span>                 <span class="cm">// WHfB cert info (Certificate Trust)</span></pre>
+
+<h2>Error Codes</h2>
+<div class="tbl-wrap"><table>
+  <tr><th>Error Code</th><th>ความหมาย</th><th>แนวทาง</th></tr>
+  <tr><td><code>0x801C03ED</code></td><td>Key registration failed</td><td>MFA ไม่ผ่าน หรือ CA policy ปิดกั้น</td></tr>
+  <tr><td><code>0x801C044D</code></td><td>TPM attestation failed</td><td>TPM firmware เก่า หรือ attestation policy strict</td></tr>
+  <tr><td><code>0x80090016</code></td><td>NTE_BAD_KEYSET</td><td>Container เสียหาย — ใช้ <code>certutil -deleteHelloContainer</code></td></tr>
+  <tr><td><code>0xC000006D</code></td><td>STATUS_LOGON_FAILURE</td><td>Key Trust: msDS-KeyCredentialLink ยังไม่ sync</td></tr>
+  <tr><td><code>0x801C0451</code></td><td>Cloud TGT error</td><td>AzureADKerberos object ยังไม่ถูกสร้าง</td></tr>
+  <tr><td><code>0x801C044C</code></td><td>No TPM</td><td>VM ไม่ได้ pass-through TPM หรือ TPM 1.2</td></tr>
+  <tr><td>4768 result <code>0x1A</code></td><td>PKINIT not supported</td><td>DC version เก่า หรือ NTAuth store ไม่มี cert</td></tr>
+</table></div>
+<div class="callout tip"><span class="label">✅ Hybrid Checklist</span><p>
+1. <code>dsregcmd</code> → AzureAdJoined + DomainJoined = YES<br>
+2. MFA สำเร็จก่อน provisioning<br>
+3. Key Trust: ตรวจ Entra Connect sync + <code>msDS-KeyCredentialLink</code><br>
+4. Cert Trust: ตรวจ CA reachability, NTAuth store, CRL/OCSP<br>
+5. Cloud Kerberos: ตรวจ AzureADKerberos object + DC ≥ 2016
+</p></div>

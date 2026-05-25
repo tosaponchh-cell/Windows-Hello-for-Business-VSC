@@ -1,0 +1,54 @@
+<div class="page-header">
+  <div class="ph-num" style="background:#1b5e20">11 — OPERATIONS</div>
+  <h1>Tips, Warnings &amp; Enterprise Path</h1>
+  <p class="ph-sub">สิ่งที่ห้ามทำ, upgrade path สู่ production และ relationship กับ WHfB</p>
+</div>
+
+<h2>สิ่งที่ต้องห้ามทำ (Never Do)</h2>
+<div class="tbl-wrap"><table>
+  <tr><th>❌ ห้ามทำ</th><th>เหตุผล</th></tr>
+  <tr><td>ใช้ <code>tpmvscmgr.msc</code> แทน <code>tpmvscmgr.exe</code></td><td>.msc คือ Management Console snap-in ไม่ใช่ runnable command</td></tr>
+  <tr><td>รัน tpmvscmgr.exe โดยไม่ Run as administrator</td><td>Command จะ fail หรือ return Access Denied (0x80070005)</td></tr>
+  <tr><td>Enroll cert ขณะ login เป็น Administrator</td><td>certmgr.msc ต้องเปิดเป็น LabUser01 — cert ต้องอยู่ใน store ของ user นั้น</td></tr>
+  <tr><td>Skip Security tab ตอนสร้าง template</td><td>ไม่มี Read + Enroll permissions = template invisible กับ user ทุกคน</td></tr>
+  <tr><td>Publish แค่ .crt โดยไม่มี .crl</td><td>.crl จำเป็นสำหรับ revocation checking — ถ้าไม่มี Smart Card login ล้มเหลวทั้งหมด</td></tr>
+  <tr><td>ใช้ <code>-setreg ca\CRLFlags +CRLF_REVCHECK_IGNORE_OFFLINE</code></td><td>Disable core security control — ทำลายจุดประสงค์ทั้งหมดของ PKI</td></tr>
+  <tr><td>ทิ้ง ROOTCA ไว้แบบ powered on</td><td>Root CA private key exposure = compromise PKI trust chain ทั้งหมด</td></tr>
+</table></div>
+
+<h2>Enterprise Upgrade Path</h2>
+<div class="tbl-wrap"><table>
+  <tr><th>Upgrade</th><th>ประโยชน์</th></tr>
+  <tr><td>IIS Web Server (HTTP CDP)</td><td>Host CRL via HTTP — เร็วกว่า, accessible to non-domain devices</td></tr>
+  <tr><td>OCSP Responder</td><td>Real-time revocation check — ไม่ต้อง download CRL ทั้ง file</td></tr>
+  <tr><td>Secondary Issuing CA</td><td>High availability — ถ้า ISSUINGCA fail, CA ตัวที่สองรับต่อ</td></tr>
+  <tr><td>Secondary DC (Replica)</td><td>ถ้า DC01 fail, Kerberos และ CRL distribution fail ทั้งหมด</td></tr>
+  <tr><td>Group Policy Autoenrollment</td><td>แจกจ่าย certificates อัตโนมัติ ไม่ต้องให้ user รัน certmgr.msc</td></tr>
+  <tr><td><strong>Windows Hello for Business</strong></td><td>Microsoft's recommended replacement — TPM-backed, cloud-aware</td></tr>
+</table></div>
+
+<h2>VSC vs WHfB — ความสัมพันธ์</h2>
+<div class="callout info"><span class="label">📌 Microsoft's Position (2019+)</span><p>Microsoft แนะนำ <strong>Windows Hello for Business</strong> หรือ FIDO2 keys สำหรับ new deployments Virtual Smart Cards ผ่าน <code>tpmvscmgr.exe</code> ยังได้รับการ support เต็มที่แต่ถือเป็น <strong>legacy path</strong> ตั้งแต่ Windows 10/11 และ Server 2019+</p></div>
+<div class="tbl-wrap"><table>
+  <tr><th>มิติ</th><th>Virtual Smart Card (VSC)</th><th>Windows Hello for Business</th></tr>
+  <tr><td>TPM requirement</td><td class="good">ใช้ TPM (vTPM ก็ได้)</td><td class="good">ใช้ TPM 2.0</td></tr>
+  <tr><td>Certificate-based</td><td class="good">ใช่ — X.509 cert ใน TPM</td><td class="warn">Optional (Certificate Trust model)</td></tr>
+  <tr><td>Cloud integration</td><td class="bad">On-prem เท่านั้น</td><td class="good">Entra ID, Hybrid AAD</td></tr>
+  <tr><td>Management</td><td class="warn">Manual / GPO</td><td class="good">Intune / GPO</td></tr>
+  <tr><td>Provisioning</td><td class="warn">Manual tpmvscmgr + certmgr</td><td class="good">Automatic หลัง MFA</td></tr>
+  <tr><td>Legacy resource support</td><td class="good">Smart Card logon เต็มรูปแบบ</td><td class="warn">ผ่าน Certificate Trust model</td></tr>
+  <tr><td>Microsoft recommendation</td><td class="warn">Legacy (still supported)</td><td class="good">Recommended 2019+</td></tr>
+</table></div>
+
+<h2>References</h2>
+<pre><span class="cm">// Virtual Smart Card Overview</span>
+<span class="cs">https://learn.microsoft.com/en-us/windows/security/identity-protection/virtual-smart-cards/</span>
+
+<span class="cm">// tpmvscmgr Command Reference</span>
+<span class="cs">https://learn.microsoft.com/en-us/windows/security/identity-protection/virtual-smart-cards/virtual-smart-card-tpmvscmgr</span>
+
+<span class="cm">// Smart Card Logon in Windows</span>
+<span class="cs">https://learn.microsoft.com/en-us/windows/security/identity-protection/smart-cards/smart-card-how-smart-card-sign-in-works-in-windows</span>
+
+<span class="cm">// certutil Command Reference</span>
+<span class="cs">https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/certutil</span></pre>

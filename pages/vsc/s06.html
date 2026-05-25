@@ -1,0 +1,39 @@
+<div class="page-header">
+  <div class="ph-num" style="background:#1b5e20">06 — VSC SETUP</div>
+  <h1>Create Virtual Smart Card (CLIENT01)</h1>
+  <p class="ph-sub">ทำบน CLIENT01 — ต้อง domain-joined, มี TPM พร้อมใช้งาน, run CMD as Administrator</p>
+</div>
+
+<h2>VSC Creation Flow</h2>
+<div class="flow-steps">
+  <div class="flow-step"><div class="step-num">1</div><div class="step-body"><strong>ตรวจสอบ TPM Status</strong><p>Windows + R → <code>tpm.msc</code> → Status ต้องเป็น: <strong>"TPM is ready for use"</strong><br>ถ้าไม่ ready: shut down VM → add Trusted Platform Module ใน VM hardware → restart</p></div></div>
+  <div class="flow-step"><div class="step-num">2</div><div class="step-body"><strong>Open CMD as Administrator — Critical</strong><p>Windows key → search Command Prompt → Right-click → <strong>Run as administrator</strong><br>⚠ รันโดยไม่ elevation = Error: Access is denied (0x80070005)</p></div></div>
+  <div class="flow-step"><div class="step-num">3</div><div class="step-body"><strong>Run Create Command</strong>
+<pre style="margin:.4rem 0 0"><span class="ck">tpmvscmgr.exe create /name "LabVSC" /pin default /adminkey random /generate</span>
+<span class="cm">// /pin default = PIN ถูกตั้งเป็น 12345678</span>
+<span class="cm">// /pin prompt  = ตั้ง PIN เอง (minimum 8 characters)</span>
+<span class="cm">// Expected: Command completed successfully</span>
+<span class="cm">// บันทึก Instance ID: ROOT\SMARTCARDREADER\0000</span></pre></div></div>
+  <div class="flow-step"><div class="step-num">4</div><div class="step-body"><strong>Verify ใน Device Manager</strong><p>Windows + X → Device Manager → ขยาย <em>Smart card readers</em><br>ต้องเห็น: <strong>Microsoft Virtual Smart Card 0</strong><br>ถ้าไม่มีใน list: ห้าม proceed to enrollment — Re-create VSC ก่อน</p></div></div>
+</div>
+
+<h2>Command Reference</h2>
+<pre><span class="cm">// Create VSC with default PIN 12345678</span>
+<span class="ck">tpmvscmgr.exe create /name "LabVSC" /pin default /adminkey random /generate</span>
+
+<span class="cm">// Create VSC with custom PIN (min 8 chars)</span>
+<span class="ck">tpmvscmgr.exe create /name "LabVSC" /pin prompt /adminkey random /generate</span>
+
+<span class="cm">// Delete VSC by instance ID</span>
+<span class="ck">tpmvscmgr.exe destroy /instance ROOT\SMARTCARDREADER\0000</span></pre>
+
+<div class="callout warn"><span class="label">⚠ .exe ไม่ใช่ .msc</span><p><code>tpmvscmgr.exe</code> ไม่ใช่ <code>tpmvscmgr.msc</code> — extension .msc คือ Management Console snap-in ไม่ใช่ command ที่ run ได้ ใช้ .exe เสมอ</p></div>
+
+<h2>Scenarios</h2>
+<div class="tbl-wrap"><table>
+  <tr><th>Scenario</th><th>Result</th><th>Root Cause</th><th>Solution</th></tr>
+  <tr><td class="good">A — OK</td><td>Command completed. Device Manager shows VSC 0</td><td>TPM ready, ran as Admin</td><td>→ Section 7</td></tr>
+  <tr><td class="bad">B — Access denied (0x80070005)</td><td>Error on create</td><td>CMD not elevated</td><td>Close CMD → Right-click → Run as administrator</td></tr>
+  <tr><td class="bad">C — TPM error</td><td>TPM unavailable error</td><td>No vTPM in VM</td><td>Shut down VM → Add Trusted Platform Module → Restart</td></tr>
+  <tr><td class="warn">D — Card already exists</td><td>Instance exists error</td><td>VSC with same name exists</td><td><code>tpmvscmgr.exe destroy /instance ROOT\SMARTCARDREADER\0000</code> first</td></tr>
+</table></div>
