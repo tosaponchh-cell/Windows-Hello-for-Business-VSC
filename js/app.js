@@ -118,6 +118,18 @@ const App = {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const html = await res.text();
       area.innerHTML = `<div class="page-wrap">${html}</div>`;
+
+      // innerHTML does NOT execute <script> tags — must do it manually
+      // Clean up any previously injected page scripts first
+      document.querySelectorAll('script[data-page-script]').forEach(s => s.remove());
+
+      area.querySelectorAll('script').forEach(oldScript => {
+        const newScript = document.createElement('script');
+        newScript.setAttribute('data-page-script', '');
+        newScript.textContent = oldScript.textContent;
+        document.body.appendChild(newScript);
+      });
+
       this.initTabs();
       this.highlightCode();
     } catch (e) {
