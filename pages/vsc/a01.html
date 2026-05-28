@@ -1,668 +1,523 @@
 <div class="page-header">
   <div class="ph-num" style="background:#1b5e20">INTERACTIVE</div>
   <h1>Flow Diagrams</h1>
-  <p class="ph-sub">คลิก Next เพื่อดูกระบวนการทีละขั้น — เลือก 3 scenes ด้านล่าง</p>
+  <p class="ph-sub">คลิก Next เพื่อดูกระบวนการทีละขั้น — 3 scenes</p>
 </div>
 
-<!-- SCENE SELECTOR -->
 <div class="sc-tabs">
   <button class="sc-tab active" onclick="setScene('pki')">⚙ PKI Build Flow</button>
   <button class="sc-tab" onclick="setScene('cert')">📜 Certificate Anatomy</button>
   <button class="sc-tab" onclick="setScene('pkinit')">🔐 Kerberos PKINIT</button>
 </div>
 
-<!-- STAGE -->
-<div class="sc-stage" id="sc-stage">
+<!-- FIXED-HEIGHT WRAPPER: stage + desc + controls never shift -->
+<div class="sc-shell">
 
-  <!-- ═══ PKI BUILD SCENE ═══ -->
-  <div class="sc-scene active" id="scene-pki">
-    <svg class="sc-arrows" viewBox="0 0 620 340" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <marker id="arr" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="5" markerHeight="5" orient="auto">
-          <path d="M1 1L7 4L1 7" fill="none" stroke="#64ffda" stroke-width="1.5" stroke-linecap="round"/>
-        </marker>
-        <marker id="arr-red" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="5" markerHeight="5" orient="auto">
-          <path d="M1 1L7 4L1 7" fill="none" stroke="#ff7b72" stroke-width="1.5" stroke-linecap="round"/>
-        </marker>
-        <marker id="arr-amber" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="5" markerHeight="5" orient="auto">
-          <path d="M1 1L7 4L1 7" fill="none" stroke="#ffd700" stroke-width="1.5" stroke-linecap="round"/>
-        </marker>
-      </defs>
-      <!-- Arrow: ROOTCA → ISSUINGCA (files) -->
-      <line id="ar-root-issuing" class="sc-arrow" x1="128" y1="110" x2="222" y2="110" stroke="#64ffda" stroke-width="2" marker-end="url(#arr)" stroke-dasharray="8 4"/>
-      <!-- Arrow: ISSUINGCA → DC01 (files) -->
-      <line id="ar-issuing-dc" class="sc-arrow" x1="340" y1="100" x2="426" y2="60" stroke="#64ffda" stroke-width="2" marker-end="url(#arr)" stroke-dasharray="8 4"/>
-      <!-- Arrow: ISSUINGCA → CLIENT01 (files) -->
-      <line id="ar-issuing-client" class="sc-arrow" x1="340" y1="125" x2="426" y2="230" stroke="#64ffda" stroke-width="2" marker-end="url(#arr)" stroke-dasharray="8 4"/>
-      <!-- Arrow: ISSUINGCA → ROOTCA (.req) -->
-      <path id="ar-req" class="sc-arrow" d="M 230 92 C 200 60 160 60 130 92" fill="none" stroke="#ffd700" stroke-width="2" marker-end="url(#arr-amber)" stroke-dasharray="6 3"/>
-      <!-- Arrow: ROOTCA → ISSUINGCA (.cer) -->
-      <path id="ar-cer" class="sc-arrow" d="M 128 128 C 160 158 200 158 228 128" fill="none" stroke="#ff9cac" stroke-width="2" marker-end="url(#arr)" stroke-dasharray="6 3"/>
-      <!-- File labels on arrows -->
-      <text id="lbl-files" class="sc-albl" x="175" y="98" text-anchor="middle" fill="#64ffda">.crt + .crl</text>
-      <text id="lbl-req" class="sc-albl" x="178" y="57" text-anchor="middle" fill="#ffd700">ISSUINGCA.req</text>
-      <text id="lbl-cer" class="sc-albl" x="178" y="165" text-anchor="middle" fill="#ff9cac">IssuingCA_Signed.cer</text>
-    </svg>
+  <!-- STAGE -->
+  <div class="sc-stage" id="sc-stage">
 
-    <!-- Server Nodes -->
-    <div class="sc-node" id="pki-rootca" style="left:20px;top:70px">
-      <div class="sc-node-icon">🖥</div>
-      <div class="sc-node-name">ROOTCA</div>
-      <div class="sc-node-ip">192.168.1.20</div>
-      <div class="sc-node-badge" id="rootca-badge" style="display:none">Standalone Root CA</div>
-      <div class="sc-node-status ok" id="rootca-ca-ok" style="display:none">✓ CA Running</div>
-      <div class="sc-node-status err" id="rootca-offline" style="display:none">⏻ OFFLINE</div>
-    </div>
+    <!-- PKI BUILD -->
+    <div class="sc-scene active" id="scene-pki">
+      <svg class="sc-svg" viewBox="0 0 620 300" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="mA" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="5" markerHeight="5" orient="auto">
+            <path d="M1 1L7 4L1 7" fill="none" stroke="#64ffda" stroke-width="1.5" stroke-linecap="round"/>
+          </marker>
+          <marker id="mB" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="5" markerHeight="5" orient="auto">
+            <path d="M1 1L7 4L1 7" fill="none" stroke="#ffd700" stroke-width="1.5" stroke-linecap="round"/>
+          </marker>
+          <marker id="mC" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="5" markerHeight="5" orient="auto">
+            <path d="M1 1L7 4L1 7" fill="none" stroke="#ff9cac" stroke-width="1.5" stroke-linecap="round"/>
+          </marker>
+        </defs>
+        <!-- ROOTCA → ISSUINGCA horizontal -->
+        <line id="ar1" class="sc-ar" x1="118" y1="70" x2="218" y2="70"
+              stroke="#64ffda" stroke-width="2" stroke-dasharray="6 3" marker-end="url(#mA)"/>
+        <text id="lb1" class="sc-lb teal" x="168" y="60">📁 .crt + .crl</text>
+        <!-- ISSUINGCA → DC01 -->
+        <line id="ar2" class="sc-ar" x1="338" y1="55" x2="420" y2="38"
+              stroke="#64ffda" stroke-width="2" stroke-dasharray="6 3" marker-end="url(#mA)"/>
+        <!-- ISSUINGCA → CLIENT01 -->
+        <line id="ar3" class="sc-ar" x1="338" y1="85" x2="420" y2="190"
+              stroke="#64ffda" stroke-width="2" stroke-dasharray="6 3" marker-end="url(#mA)"/>
+        <text id="lb2" class="sc-lb teal" x="370" y="130">.crt +.crl</text>
+        <!-- .req arc (ISSUINGCA → ROOTCA, above) -->
+        <path id="ar4" class="sc-ar" d="M 222,50 C 200,20 140,20 120,48"
+              fill="none" stroke="#ffd700" stroke-width="2" stroke-dasharray="5 3" marker-end="url(#mB)"/>
+        <text id="lb3" class="sc-lb amber" x="155" y="16">.req</text>
+        <!-- .cer arc (ROOTCA → ISSUINGCA, below) -->
+        <path id="ar5" class="sc-ar" d="M 118,92 C 142,120 200,120 222,93"
+              fill="none" stroke="#ff9cac" stroke-width="2" stroke-dasharray="5 3" marker-end="url(#mC)"/>
+        <text id="lb4" class="sc-lb pink" x="152" y="134">Signed .cer</text>
+      </svg>
 
-    <div class="sc-node" id="pki-issuingca" style="left:225px;top:70px">
-      <div class="sc-node-icon">🖥</div>
-      <div class="sc-node-name">ISSUINGCA</div>
-      <div class="sc-node-ip">192.168.1.30</div>
-      <div class="sc-node-badge" id="issuingca-badge" style="display:none">Enterprise Sub-CA</div>
-      <div class="sc-node-status ok" id="issuingca-running" style="display:none">✓ CA Running</div>
-    </div>
-
-    <div class="sc-node" id="pki-dc01" style="left:430px;top:10px">
-      <div class="sc-node-icon">🖥</div>
-      <div class="sc-node-name">DC01</div>
-      <div class="sc-node-ip">192.168.1.10</div>
-      <div class="sc-node-badge" style="background:#1a3a5c">AD / KDC</div>
-    </div>
-
-    <div class="sc-node" id="pki-client" style="left:430px;top:195px">
-      <div class="sc-node-icon">💻</div>
-      <div class="sc-node-name">CLIENT01</div>
-      <div class="sc-node-ip">192.168.1.50</div>
-      <div class="sc-node-badge" style="background:#1a3a5c">vTPM</div>
-    </div>
-
-    <!-- Cert Card (appears at ROOTCA) -->
-    <div class="sc-certcard" id="rootca-cert" style="left:20px;top:220px">
-      <div class="sc-certcard-title">📜 LAB-RootCA.crt</div>
-      <div class="sc-certcard-row sc-cf-ver">Version: <strong>3</strong></div>
-      <div class="sc-certcard-row sc-cf-issuer">Issuer: <strong>CN=LAB-RootCA</strong></div>
-      <div class="sc-certcard-row sc-cf-subject">Subject: <strong>CN=LAB-RootCA</strong> <span class="sc-tag">Self-signed</span></div>
-      <div class="sc-certcard-row sc-cf-key">Public Key: <strong>RSA 2048</strong></div>
-      <div class="sc-certcard-row sc-cf-sig">Signature: <strong>SHA256withRSA</strong></div>
-      <div class="sc-certcard-row sc-cf-crl">CRL: <strong>LAB-RootCA.crl</strong></div>
-    </div>
-
-    <!-- AD Published badge -->
-    <div class="sc-badge-float" id="ad-published" style="left:225px;top:200px">📡 Published to AD</div>
-    <!-- .req file badge -->
-    <div class="sc-file-badge amber" id="file-req" style="left:225px;top:230px">📄 ISSUINGCA.req</div>
-    <!-- .cer file badge -->
-    <div class="sc-file-badge pink" id="file-cer" style="left:20px;top:200px">✅ IssuingCA_Signed.cer</div>
-  </div><!-- /scene-pki -->
-
-  <!-- ═══ CERT ANATOMY SCENE ═══ -->
-  <div class="sc-scene" id="scene-cert">
-    <div class="sc-cert-wrap">
-      <div class="sc-cert-shell">
-        <div class="sc-cert-header">
-          <span class="sc-cert-icon">📜</span>
-          <span>X.509 Certificate v3</span>
-          <span class="sc-cert-tag" id="ct-type"></span>
+      <!-- Server nodes — fixed zones, no overlap -->
+      <div class="sc-nd" id="nd-rootca"  style="left:22px;top:18px">
+        <div class="nd-ico">🖥</div>
+        <div class="nd-name">ROOTCA</div>
+        <div class="nd-ip">192.168.1.20</div>
+        <div class="nd-badges">
+          <span class="nd-b green" id="b-standalone" style="display:none">Standalone Root CA</span>
+          <span class="nd-b red"   id="b-offline"    style="display:none">⏻ OFFLINE</span>
         </div>
-        <div class="sc-cert-section" id="cs-serial">
-          <div class="sc-cert-field-name">Serial Number</div>
-          <div class="sc-cert-field-val">7A:3B:C4:F1:...</div>
-          <div class="sc-cert-explain">ตัวเลขไม่ซ้ำกันที่ CA กำหนด ใช้ระบุ cert ใน CRL</div>
+      </div>
+
+      <div class="sc-nd" id="nd-issuing" style="left:220px;top:18px">
+        <div class="nd-ico">🖥</div>
+        <div class="nd-name">ISSUINGCA</div>
+        <div class="nd-ip">192.168.1.30</div>
+        <div class="nd-badges">
+          <span class="nd-b blue" id="b-subca"    style="display:none">Enterprise Sub-CA</span>
+          <span class="nd-b green" id="b-carun"   style="display:none">✓ CA Running</span>
+          <span class="nd-b teal" id="b-adpub"    style="display:none">📡 Published to AD</span>
+          <span class="nd-b amber" id="b-req"     style="display:none">📄 .req generated</span>
         </div>
-        <div class="sc-cert-section" id="cs-issuer">
-          <div class="sc-cert-field-name">Issuer</div>
-          <div class="sc-cert-field-val">CN=LAB-IssuingCA, DC=lab, DC=local</div>
-          <div class="sc-cert-explain">ใคร sign cert นี้ — DC ใช้ verify กับ CA chain</div>
+      </div>
+
+      <div class="sc-nd" id="nd-dc01"    style="left:420px;top:8px">
+        <div class="nd-ico">🖥</div>
+        <div class="nd-name">DC01</div>
+        <div class="nd-ip">192.168.1.10</div>
+        <div class="nd-badges">
+          <span class="nd-b blue" style="display:inline">AD / KDC</span>
         </div>
-        <div class="sc-cert-section" id="cs-validity">
-          <div class="sc-cert-field-name">Validity</div>
-          <div class="sc-cert-field-val">notBefore: 2026-01-01 &nbsp;|&nbsp; notAfter: 2027-01-01</div>
-          <div class="sc-cert-explain">cert ใช้ได้ 1 ปี — ถ้าหมดอายุ KDC reject ทันที</div>
+      </div>
+
+      <div class="sc-nd" id="nd-client"  style="left:420px;top:168px">
+        <div class="nd-ico">💻</div>
+        <div class="nd-name">CLIENT01</div>
+        <div class="nd-ip">192.168.1.50</div>
+        <div class="nd-badges">
+          <span class="nd-b blue" style="display:inline">vTPM</span>
         </div>
-        <div class="sc-cert-section" id="cs-subject">
-          <div class="sc-cert-field-name">Subject</div>
-          <div class="sc-cert-field-val">CN=LabUser01</div>
-          <div class="sc-cert-explain">identity ของ cert owner</div>
-        </div>
-        <div class="sc-cert-section" id="cs-pubkey">
-          <div class="sc-cert-field-name">SubjectPublicKeyInfo</div>
-          <div class="sc-cert-field-val">RSA 2048-bit &nbsp;<span class="sc-tpm-badge">🔒 TPM-bound</span></div>
-          <div class="sc-cert-explain">Public key ที่คู่กับ private key ใน TPM — private key ออกจาก TPM ไม่ได้เลย</div>
-        </div>
-        <div class="sc-cert-section" id="cs-san">
-          <div class="sc-cert-field-name">Subject Alternative Name</div>
-          <div class="sc-cert-field-val">UPN: LabUser01@lab.local</div>
-          <div class="sc-cert-explain">DC ใช้ SAN (UPN) เพื่อ map cert → AD user object</div>
-        </div>
-        <div class="sc-cert-section" id="cs-eku">
-          <div class="sc-cert-field-name">Extended Key Usage (EKU)</div>
-          <div class="sc-cert-field-val">
-            <span class="sc-eku-badge">Smart Card Logon</span>
-            <span class="sc-eku-badge">Client Authentication</span>
+      </div>
+
+      <!-- Cert card — bottom-left, compact -->
+      <div class="sc-certcard" id="cc-root" style="left:22px;bottom:12px">
+        <div class="cc-title">📜 LAB-RootCA.crt</div>
+        <div class="cc-row" id="cc-issuer">Issuer: <b>CN=LAB-RootCA</b></div>
+        <div class="cc-row" id="cc-subject">Subject: <b>CN=LAB-RootCA</b> <span class="cc-tag">Self-signed</span></div>
+        <div class="cc-row" id="cc-key">Key: <b>RSA 2048</b></div>
+        <div class="cc-row" id="cc-crl">CRL: <b>LAB-RootCA.crl</b></div>
+      </div>
+    </div><!-- /pki -->
+
+    <!-- CERT ANATOMY -->
+    <div class="sc-scene" id="scene-cert">
+      <div class="cert-wrap">
+        <div class="cert-card">
+          <div class="cert-hdr">
+            <span>📜</span>
+            <span>X.509 Certificate v3</span>
+            <span class="cert-type" id="ct-tag"></span>
           </div>
-          <div class="sc-cert-explain">Smart Card Logon OID (1.3.6.1.4.1.311.20.2.2) บังคับ — ถ้าไม่มี DC reject</div>
-        </div>
-        <div class="sc-cert-section" id="cs-cdp">
-          <div class="sc-cert-field-name">CDP / AIA</div>
-          <div class="sc-cert-field-val">ldap:///CN=LAB-IssuingCA,CN=CDP... | http://issuingca/CRL/...</div>
-          <div class="sc-cert-explain">ที่อยู่สำหรับ download CRL — DC ใช้ verify revocation ตอน PKINIT</div>
-        </div>
-        <div class="sc-cert-section" id="cs-sig">
-          <div class="sc-cert-field-name">Signature (CA's)</div>
-          <div class="sc-cert-field-val">SHA256withRSA — signed by LAB-IssuingCA private key</div>
-          <div class="sc-cert-explain">SHA256(DER(TBSCertificate)) แล้วเซ็นด้วย CA private key — ปลอมแปลงไม่ได้</div>
+          <div class="cert-sec" id="cs-serial">
+            <div class="cs-name">Serial Number</div>
+            <div class="cs-val">7A:3B:C4:F1:...</div>
+            <div class="cs-note">ตัวเลขไม่ซ้ำกัน — DC ใช้ตรวจกับ CRL ว่า cert ถูก revoke หรือยัง</div>
+          </div>
+          <div class="cert-sec" id="cs-issuer">
+            <div class="cs-name">Issuer</div>
+            <div class="cs-val">CN=LAB-IssuingCA, DC=lab, DC=local</div>
+            <div class="cs-note">ใคร sign cert นี้ — DC trace chain จาก Issuer ขึ้นไปถึง Root</div>
+          </div>
+          <div class="cert-sec" id="cs-validity">
+            <div class="cs-name">Validity</div>
+            <div class="cs-val">2026-01-01 → 2027-01-01</div>
+            <div class="cs-note">cert มีอายุ 1 ปี — ถ้าหมดอายุ KDC reject ทันที</div>
+          </div>
+          <div class="cert-sec" id="cs-subject">
+            <div class="cs-name">Subject</div>
+            <div class="cs-val">CN=LabUser01</div>
+            <div class="cs-note">identity ของ cert owner</div>
+          </div>
+          <div class="cert-sec" id="cs-pubkey">
+            <div class="cs-name">SubjectPublicKeyInfo</div>
+            <div class="cs-val">RSA 2048-bit &nbsp;<span class="tpm-tag">🔒 TPM-bound</span></div>
+            <div class="cs-note">Private key อยู่ใน TPM — ออกไม่ได้เลย แม้แต่ OS ที่ compromise</div>
+          </div>
+          <div class="cert-sec" id="cs-san">
+            <div class="cs-name">Subject Alternative Name (SAN)</div>
+            <div class="cs-val">UPN: LabUser01@lab.local</div>
+            <div class="cs-note">DC map cert → AD user ผ่าน UPN นี้ — ถ้า mismatch login ล้มเหลว</div>
+          </div>
+          <div class="cert-sec" id="cs-eku">
+            <div class="cs-name">Extended Key Usage</div>
+            <div class="cs-val">
+              <span class="eku-b">Smart Card Logon</span>
+              <span class="eku-b">Client Authentication</span>
+            </div>
+            <div class="cs-note">OID 1.3.6.1.4.1.311.20.2.2 บังคับ — ไม่มี = KDC reject ทันที</div>
+          </div>
+          <div class="cert-sec" id="cs-cdp">
+            <div class="cs-name">CDP / AIA</div>
+            <div class="cs-val">ldap:///CN=LAB-IssuingCA... | http://...</div>
+            <div class="cs-note">ที่อยู่ดาวน์โหลด CRL — ถ้า DC เข้าไม่ได้ = CRYPT_E_REVOCATION_OFFLINE</div>
+          </div>
+          <div class="cert-sec" id="cs-sig">
+            <div class="cs-name">CA Signature</div>
+            <div class="cs-val">SHA256(DER(TBSCertificate)) signed by LAB-IssuingCA</div>
+            <div class="cs-note">ปลอมแปลงไม่ได้ — ต้องรู้ CA private key เท่านั้น</div>
+          </div>
         </div>
       </div>
-    </div>
-  </div><!-- /scene-cert -->
+    </div><!-- /cert -->
 
-  <!-- ═══ KERBEROS PKINIT SCENE ═══ -->
-  <div class="sc-scene" id="scene-pkinit">
-    <div class="sc-pkinit-wrap">
-      <!-- Client side -->
-      <div class="sc-pk-actor" id="pk-client">
-        <div class="sc-pk-icon">💻</div>
-        <div class="sc-pk-name">CLIENT01</div>
-        <div class="sc-pk-role">LabUser01</div>
-        <div class="sc-pk-events" id="pk-client-events"></div>
-      </div>
-
-      <!-- Message lane -->
-      <div class="sc-pk-lane" id="pk-lane">
-        <div class="sc-pk-msg" id="pk-msg1">
-          <div class="sc-pk-msg-label" id="pk-msg-label">→</div>
-          <div class="sc-pk-msg-name" id="pk-msg-name"></div>
+    <!-- KERBEROS PKINIT -->
+    <div class="sc-scene" id="scene-pkinit">
+      <div class="pk-layout">
+        <div class="pk-actor" id="pk-client">
+          <div class="pk-ico">💻</div>
+          <div class="pk-name">CLIENT01</div>
+          <div class="pk-role">LabUser01</div>
+          <div class="pk-evts" id="pk-cevts"></div>
         </div>
-        <div class="sc-pk-msg right" id="pk-msg2">
-          <div class="sc-pk-msg-name" id="pk-msg-name2"></div>
-          <div class="sc-pk-msg-label" id="pk-msg-label2">←</div>
+        <div class="pk-lane">
+          <div class="pk-port" id="pk-port">Port 88 — Kerberos</div>
+          <div class="pk-msg fwd" id="pk-fwd">
+            <div class="pk-arrow">→</div>
+            <div class="pk-msg-txt" id="pk-fwd-txt"></div>
+          </div>
+          <div class="pk-msg bwd" id="pk-bwd">
+            <div class="pk-msg-txt" id="pk-bwd-txt"></div>
+            <div class="pk-arrow">←</div>
+          </div>
         </div>
-        <!-- Port label -->
-        <div class="sc-pk-port" id="pk-port" style="display:none">Port 88 (Kerberos)</div>
+        <div class="pk-actor" id="pk-dc">
+          <div class="pk-ico">🖥</div>
+          <div class="pk-name">DC01 (KDC)</div>
+          <div class="pk-role">192.168.1.10</div>
+          <div class="pk-evts" id="pk-devts"></div>
+        </div>
       </div>
+      <div class="pk-detail" id="pk-detail"></div>
+    </div><!-- /pkinit -->
 
-      <!-- DC side -->
-      <div class="sc-pk-actor" id="pk-dc">
-        <div class="sc-pk-icon">🖥</div>
-        <div class="sc-pk-name">DC01 (KDC)</div>
-        <div class="sc-pk-role">192.168.1.10</div>
-        <div class="sc-pk-events" id="pk-dc-events"></div>
-      </div>
-    </div>
+  </div><!-- /stage -->
 
-    <!-- TPM detail box -->
-    <div class="sc-pk-detail" id="pk-detail"></div>
-  </div><!-- /scene-pkinit -->
+  <!-- PROGRESS BAR -->
+  <div class="sc-prog">
+    <span class="sc-prog-lbl" id="sc-lbl">Step 1</span>
+    <div class="sc-prog-bar"><div class="sc-prog-fill" id="sc-fill"></div></div>
+  </div>
 
-</div><!-- /stage -->
+  <!-- DESCRIPTION — fixed height, no shifting -->
+  <div class="sc-desc">
+    <div class="sc-desc-title" id="sc-title">เริ่มต้น</div>
+    <div class="sc-desc-body" id="sc-body">กด Next เพื่อเริ่ม</div>
+  </div>
 
-<!-- PROGRESS -->
-<div class="sc-progress-wrap">
-  <div class="sc-progress-label" id="sc-step-label">Step 1</div>
-  <div class="sc-progressbar"><div class="sc-progress-fill" id="sc-progress-fill"></div></div>
-</div>
+  <!-- CONTROLS — always same position -->
+  <div class="sc-ctrl">
+    <button class="sc-btn-sec" id="sc-back" onclick="prevStep()" disabled>← Back</button>
+    <div class="sc-dots" id="sc-dots"></div>
+    <button class="sc-btn-pri" id="sc-next" onclick="nextStep()">Next →</button>
+  </div>
 
-<!-- DESCRIPTION -->
-<div class="sc-desc-box">
-  <div class="sc-desc-title" id="sc-desc-title">เริ่มต้น</div>
-  <div class="sc-desc-text" id="sc-desc-text">กด Next เพื่อเริ่ม</div>
-</div>
+</div><!-- /shell -->
 
-<!-- CONTROLS -->
-<div class="sc-controls">
-  <button class="sc-btn" id="sc-btn-back" onclick="prevStep()" disabled>← Back</button>
-  <div class="sc-step-dots" id="sc-dots"></div>
-  <button class="sc-btn primary" id="sc-btn-next" onclick="nextStep()">Next →</button>
-</div>
-
-<!-- ═══ STYLES ═══ -->
 <style>
-/* Scene tabs */
-.sc-tabs{display:flex;gap:.5rem;margin-bottom:0;flex-wrap:wrap}
-.sc-tab{padding:.55rem 1.1rem;background:var(--bg3);border:1px solid var(--border);
-  border-radius:20px;cursor:pointer;font-size:13px;font-weight:500;color:var(--text2);
-  transition:all .15s;font-family:'IBM Plex Sans Thai','IBM Plex Sans',sans-serif}
+/* ── Layout shell: total height fixed ── */
+.sc-tabs{display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:.75rem}
+.sc-tab{padding:.5rem 1.1rem;background:var(--bg3);border:1px solid var(--border);border-radius:20px;
+  cursor:pointer;font-size:13px;font-weight:500;color:var(--text2);transition:all .15s;
+  font-family:'IBM Plex Sans Thai','IBM Plex Sans',sans-serif}
 .sc-tab:hover{background:var(--bg2);color:var(--text)}
 .sc-tab.active{background:#1b5e20;color:#fff;border-color:#1b5e20}
 
-/* Stage */
+.sc-shell{display:flex;flex-direction:column;gap:.6rem}
+
+/* ── Stage ── */
 .sc-stage{position:relative;background:#0d1117;border-radius:10px;
-  height:360px;margin:.75rem 0;overflow:hidden;border:1px solid #21262d}
-.sc-scene{display:none;width:100%;height:100%;position:relative}
+  height:300px;overflow:hidden;border:1px solid #21262d;flex-shrink:0}
+.sc-scene{display:none;width:100%;height:100%;position:absolute;inset:0}
 .sc-scene.active{display:block}
 
-/* ── PKI SCENE ── */
-.sc-arrows{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
-.sc-arrow{opacity:0;transition:opacity .4s}
-.sc-arrow.show{opacity:1}
-.sc-albl{font-family:'IBM Plex Mono',monospace;font-size:10px;opacity:0;transition:opacity .4s}
-.sc-albl.show{opacity:1}
+/* ── PKI: SVG overlay ── */
+.sc-svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.sc-ar{opacity:0;transition:opacity .45s ease}
+.sc-ar.show{opacity:1}
+.sc-lb{font-family:'IBM Plex Mono',monospace;font-size:9.5px;opacity:0;transition:opacity .45s}
+.sc-lb.show{opacity:1}
+.sc-lb.teal{fill:#64ffda}.sc-lb.amber{fill:#ffd700}.sc-lb.pink{fill:#ff9cac}
 
-.sc-node{position:absolute;display:flex;flex-direction:column;align-items:center;
-  gap:3px;opacity:0;transform:scale(.85);transition:all .4s}
-.sc-node.show{opacity:1;transform:scale(1)}
-.sc-node.highlight{filter:drop-shadow(0 0 8px #64ffda)}
-.sc-node-icon{font-size:1.8rem;line-height:1}
-.sc-node-name{font-family:'IBM Plex Mono',monospace;font-size:11px;color:#ccd6f6;font-weight:600}
-.sc-node-ip{font-family:'IBM Plex Mono',monospace;font-size:9px;color:#5a7a92}
-.sc-node-badge{margin-top:3px;font-size:9px;padding:2px 7px;border-radius:10px;
-  background:#1b5e20;color:#a5d6a7;font-family:'IBM Plex Mono',monospace}
-.sc-node-status{font-size:9px;padding:2px 7px;border-radius:10px;margin-top:2px;font-family:'IBM Plex Mono',monospace}
-.sc-node-status.ok{background:#1b5e20;color:#a5d6a7}
-.sc-node-status.err{background:#4a1010;color:#ef9a9a}
+/* ── PKI: Server nodes ── */
+.sc-nd{position:absolute;display:flex;flex-direction:column;align-items:center;
+  gap:3px;opacity:0;transform:scale(.88);transition:all .4s ease;width:96px;text-align:center}
+.sc-nd.show{opacity:1;transform:scale(1)}
+.sc-nd.hl{filter:drop-shadow(0 0 10px rgba(100,255,218,.6))}
+.nd-ico{font-size:1.65rem;line-height:1}
+.nd-name{font-family:'IBM Plex Mono',monospace;font-size:11px;color:#ccd6f6;font-weight:700}
+.nd-ip{font-family:'IBM Plex Mono',monospace;font-size:8.5px;color:#3a5a78;margin-bottom:2px}
+.nd-badges{display:flex;flex-direction:column;align-items:center;gap:2px}
+.nd-b{font-family:'IBM Plex Mono',monospace;font-size:8px;padding:1px 6px;
+  border-radius:8px;white-space:nowrap;line-height:1.5}
+.nd-b.green{background:#0a1e0a;border:1px solid #2e7d32;color:#a5d6a7}
+.nd-b.red{background:#1a0808;border:1px solid #c62828;color:#ef9a9a}
+.nd-b.blue{background:#0a1628;border:1px solid #1565c0;color:#82aaff}
+.nd-b.teal{background:#0a1e1a;border:1px solid #00796b;color:#80cbc4}
+.nd-b.amber{background:#1a1400;border:1px solid #f57f17;color:#ffd700}
 
-.sc-certcard{position:absolute;background:#0a1628;border:1px solid #1e3a5c;
-  border-radius:8px;padding:.6rem .8rem;min-width:185px;opacity:0;
-  transition:opacity .4s,transform .4s;transform:translateY(10px)}
+/* ── PKI: Cert card (compact, bottom-left) ── */
+.sc-certcard{position:absolute;background:#050d18;border:1px solid #1e3a5c;
+  border-radius:6px;padding:.5rem .65rem;width:185px;
+  opacity:0;transition:opacity .4s,transform .4s;transform:translateY(6px)}
 .sc-certcard.show{opacity:1;transform:translateY(0)}
-.sc-certcard-title{font-family:'IBM Plex Mono',monospace;font-size:10.5px;
-  color:#64ffda;margin-bottom:.4rem;font-weight:600}
-.sc-certcard-row{font-family:'IBM Plex Mono',monospace;font-size:10px;
-  color:#5a7a92;padding:1px 0;border-bottom:1px solid #1a2a3a;opacity:0;transition:opacity .3s}
-.sc-certcard-row.show{opacity:1;color:#a5d6a7}
-.sc-tag{background:#0a3d6b;color:#82aaff;padding:1px 5px;border-radius:8px;font-size:9px}
+.cc-title{font-family:'IBM Plex Mono',monospace;font-size:10px;color:#64ffda;font-weight:700;margin-bottom:4px}
+.cc-row{font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#3a5a78;
+  padding:1px 0;border-bottom:1px solid #0e1d2e;opacity:0;transition:opacity .35s}
+.cc-row.show{opacity:1;color:#8ab4cc}
+.cc-tag{background:#0a3060;color:#82aaff;padding:0 4px;border-radius:6px;font-size:8px}
 
-.sc-badge-float{position:absolute;background:#1e3a5c;border:1px solid #42a5f5;
-  color:#82aaff;font-size:10px;padding:3px 9px;border-radius:10px;
-  font-family:'IBM Plex Mono',monospace;opacity:0;transition:opacity .4s;white-space:nowrap}
-.sc-badge-float.show{opacity:1}
+/* ── CERT ANATOMY ── */
+.cert-wrap{height:100%;overflow-y:auto;display:flex;justify-content:center;padding:.75rem .75rem .5rem}
+.cert-wrap::-webkit-scrollbar{width:4px}
+.cert-wrap::-webkit-scrollbar-thumb{background:#1e3a5c;border-radius:2px}
+.cert-card{background:#050d18;border:1.5px solid #1e3a5c;border-radius:10px;
+  width:100%;max-width:520px;overflow:hidden;flex-shrink:0}
+.cert-hdr{display:flex;align-items:center;gap:.5rem;padding:.55rem 1rem;
+  background:#0a1628;font-family:'IBM Plex Mono',monospace;font-size:12.5px;
+  color:#64ffda;font-weight:700;border-bottom:1px solid #1e3a5c}
+.cert-type{margin-left:auto;font-size:9.5px;padding:1px 8px;border-radius:8px;background:#1b5e20;color:#a5d6a7}
+.cert-sec{padding:.45rem .9rem;border-bottom:1px solid #0e1d2e;
+  opacity:.1;transition:all .35s;transform:translateX(-3px)}
+.cert-sec.active{opacity:1;transform:translateX(0);background:rgba(100,255,218,.03)}
+.cs-name{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.1em;
+  text-transform:uppercase;color:#64ffda;margin-bottom:2px}
+.cs-val{font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#ccd6f6;margin-bottom:2px}
+.cs-note{font-size:11px;color:#4a6a82;font-style:italic;line-height:1.4}
+.tpm-tag{background:#0a3060;color:#64ffda;padding:1px 6px;border-radius:8px;font-size:9.5px}
+.eku-b{background:#0a1a3a;color:#82aaff;padding:2px 8px;border-radius:8px;
+  font-size:10px;margin-right:4px;display:inline-block;border:1px solid #1e3a5c}
 
-.sc-file-badge{position:absolute;font-size:10px;padding:3px 9px;border-radius:10px;
-  font-family:'IBM Plex Mono',monospace;opacity:0;transition:all .5s;white-space:nowrap}
-.sc-file-badge.show{opacity:1}
-.sc-file-badge.amber{background:#3a2800;border:1px solid #ffd700;color:#ffd700}
-.sc-file-badge.pink{background:#2a0a0a;border:1px solid #ff9cac;color:#ff9cac}
+/* ── PKINIT ── */
+.pk-layout{display:flex;align-items:flex-start;height:230px;padding:.75rem .75rem 0;gap:0}
+.pk-actor{width:120px;flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:3px}
+.pk-ico{font-size:1.8rem;line-height:1}
+.pk-name{font-family:'IBM Plex Mono',monospace;font-size:11px;color:#ccd6f6;font-weight:700}
+.pk-role{font-family:'IBM Plex Mono',monospace;font-size:9px;color:#3a5a78;margin-bottom:3px}
+.pk-evts{width:100%;display:flex;flex-direction:column;gap:2px;max-height:150px;overflow-y:auto}
+.pk-evt{font-size:9.5px;padding:2px 6px;border-radius:5px;
+  font-family:'IBM Plex Mono',monospace;opacity:0;transition:opacity .3s;line-height:1.45;
+  border:1px solid #1e3a5c;color:#82aaff;background:#050d18}
+.pk-evt.show{opacity:1}
+.pk-evt.ok{border-color:#1b5e20;color:#a5d6a7;background:#030e03}
+.pk-evt.warn{border-color:#f57f17;color:#ffd700;background:#0e0900}
 
-/* ── CERT ANATOMY SCENE ── */
-.sc-cert-wrap{display:flex;align-items:flex-start;justify-content:center;padding:1.2rem;height:100%;overflow-y:auto}
-.sc-cert-shell{background:#0a0f1a;border:1.5px solid #1e3a5c;border-radius:10px;
-  width:100%;max-width:560px;overflow:hidden}
-.sc-cert-header{display:flex;align-items:center;gap:.6rem;padding:.65rem 1rem;
-  background:#0d1728;font-family:'IBM Plex Mono',monospace;font-size:13px;
-  color:#64ffda;font-weight:600;border-bottom:1px solid #1e3a5c}
-.sc-cert-icon{font-size:1.2rem}
-.sc-cert-tag{margin-left:auto;font-size:10px;padding:2px 8px;border-radius:10px;
-  background:#1b5e20;color:#a5d6a7}
-.sc-cert-section{padding:.55rem 1rem;border-bottom:1px solid #111e2e;
-  opacity:.12;transition:all .35s;transform:translateX(-4px)}
-.sc-cert-section.active{opacity:1;transform:translateX(0);background:rgba(100,255,218,.04)}
-.sc-cert-field-name{font-family:'IBM Plex Mono',monospace;font-size:9.5px;
-  letter-spacing:.1em;text-transform:uppercase;color:#64ffda;margin-bottom:3px}
-.sc-cert-field-val{font-family:'IBM Plex Mono',monospace;font-size:12px;color:#ccd6f6;margin-bottom:3px}
-.sc-cert-explain{font-size:11.5px;color:#5a7a92;font-style:italic;line-height:1.4}
-.sc-tpm-badge{background:#0a3d1e;color:#64ffda;padding:1px 7px;border-radius:10px;font-size:10px}
-.sc-eku-badge{background:#1a2a4a;color:#82aaff;padding:2px 8px;border-radius:10px;
-  font-size:10.5px;margin-right:4px;display:inline-block}
+.pk-lane{flex:1;display:flex;flex-direction:column;align-items:center;gap:.4rem;
+  padding:.25rem .35rem;position:relative}
+.pk-port{font-family:'IBM Plex Mono',monospace;font-size:9px;color:#3a5a78;
+  background:#050d18;padding:1px 7px;border-radius:8px;border:1px solid #1a2a3a}
+.pk-msg{display:flex;align-items:center;gap:.35rem;width:100%;
+  opacity:0;transition:opacity .4s;padding:3px 6px;
+  background:#0a1628;border:1px solid #1e3a5c;border-radius:6px}
+.pk-msg.show{opacity:1}
+.pk-arrow{font-size:1rem;color:#64ffda;flex-shrink:0}
+.pk-msg-txt{font-family:'IBM Plex Mono',monospace;font-size:10px;color:#82aaff;
+  flex:1;text-align:center;line-height:1.4}
+.pk-detail{margin:.4rem .75rem .5rem;background:#050d18;border:1px solid #1e3a5c;
+  border-radius:6px;padding:.45rem .75rem;font-family:'IBM Plex Mono',monospace;
+  font-size:10.5px;color:#64ffda;line-height:1.55;
+  opacity:0;transition:opacity .4s;min-height:36px}
+.pk-detail.show{opacity:1}
 
-/* ── PKINIT SCENE ── */
-.sc-pkinit-wrap{display:flex;align-items:flex-start;gap:0;height:100%;padding:1rem .75rem .5rem}
-.sc-pk-actor{width:130px;flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:4px}
-.sc-pk-icon{font-size:2rem;line-height:1}
-.sc-pk-name{font-family:'IBM Plex Mono',monospace;font-size:11px;color:#ccd6f6;font-weight:600}
-.sc-pk-role{font-family:'IBM Plex Mono',monospace;font-size:9px;color:#5a7a92}
-.sc-pk-events{width:100%;margin-top:.4rem;display:flex;flex-direction:column;gap:3px}
-.sc-pk-event{font-size:10px;padding:3px 7px;border-radius:6px;
-  background:#0a1628;border:1px solid #1e3a5c;color:#82aaff;
-  font-family:'IBM Plex Mono',monospace;opacity:0;transition:opacity .3s;line-height:1.4}
-.sc-pk-event.show{opacity:1}
-.sc-pk-event.ok{border-color:#1b5e20;color:#a5d6a7;background:#0a1e0f}
-.sc-pk-event.warn{border-color:#ff8f00;color:#ffd700;background:#1a1400}
-.sc-pk-event.err{border-color:#b71c1c;color:#ff7b72;background:#1a0808}
+/* ── Progress ── */
+.sc-prog{display:flex;align-items:center;gap:.6rem}
+.sc-prog-lbl{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text3);
+  white-space:nowrap;min-width:70px}
+.sc-prog-bar{flex:1;height:3px;background:var(--bg3);border-radius:3px;overflow:hidden}
+.sc-prog-fill{height:100%;background:#1b5e20;border-radius:3px;transition:width .4s ease}
 
-.sc-pk-lane{flex:1;display:flex;flex-direction:column;justify-content:flex-start;
-  align-items:center;gap:.5rem;padding:.3rem .4rem;position:relative;min-width:0}
-.sc-pk-port{position:absolute;top:0;font-family:'IBM Plex Mono',monospace;
-  font-size:9px;color:#5a7a92;background:#0d1117;padding:1px 6px;border-radius:8px}
-.sc-pk-msg{display:flex;align-items:center;gap:.4rem;width:100%;opacity:0;
-  transition:opacity .4s,transform .4s;transform:translateX(-6px)}
-.sc-pk-msg.show{opacity:1;transform:translateX(0)}
-.sc-pk-msg.right{flex-direction:row-reverse;transform:translateX(6px)}
-.sc-pk-msg.right.show{transform:translateX(0)}
-.sc-pk-msg-label{font-size:1.1rem;color:#64ffda;flex-shrink:0}
-.sc-pk-msg-name{font-family:'IBM Plex Mono',monospace;font-size:10.5px;
-  background:#0a1628;border:1px solid #1e3a5c;color:#82aaff;
-  padding:4px 8px;border-radius:6px;flex:1;line-height:1.4;text-align:center}
+/* ── Description: FIXED HEIGHT — buttons never move ── */
+.sc-desc{background:var(--bg2);border-radius:8px;padding:.75rem 1rem;
+  height:96px;overflow-y:auto;flex-shrink:0}
+.sc-desc::-webkit-scrollbar{width:3px}
+.sc-desc::-webkit-scrollbar-thumb{background:#c8c0b0;border-radius:2px}
+.sc-desc-title{font-weight:600;color:var(--text);font-size:13.5px;margin-bottom:.2rem}
+.sc-desc-body{font-size:12.5px;color:var(--text2);line-height:1.6}
 
-.sc-pk-detail{position:absolute;bottom:.75rem;left:.75rem;right:.75rem;
-  background:#0a1628;border:1px solid #1e3a5c;border-radius:8px;
-  padding:.55rem .85rem;font-family:'IBM Plex Mono',monospace;font-size:11px;
-  color:#82aaff;line-height:1.6;opacity:0;transition:opacity .4s;min-height:40px}
-.sc-pk-detail.show{opacity:1}
-
-/* Progress & Controls */
-.sc-progress-wrap{display:flex;align-items:center;gap:.75rem;margin:.5rem 0 .25rem}
-.sc-progress-label{font-family:'IBM Plex Mono',monospace;font-size:11px;
-  color:var(--text3);white-space:nowrap;min-width:80px}
-.sc-progressbar{flex:1;height:4px;background:var(--bg3);border-radius:4px;overflow:hidden}
-.sc-progress-fill{height:100%;background:#1b5e20;border-radius:4px;transition:width .4s ease}
-
-.sc-desc-box{background:var(--bg2);border-radius:8px;padding:.85rem 1.1rem;margin:.4rem 0}
-.sc-desc-title{font-weight:600;color:var(--text);font-size:14px;margin-bottom:.25rem}
-.sc-desc-text{font-size:13px;color:var(--text2);line-height:1.6;margin:0}
-
-.sc-controls{display:flex;align-items:center;justify-content:space-between;margin-top:.75rem}
-.sc-btn{padding:.55rem 1.4rem;border-radius:6px;border:1px solid var(--border);
-  background:var(--bg2);color:var(--text2);cursor:pointer;font-size:13.5px;
-  font-weight:500;transition:all .15s;font-family:'IBM Plex Sans Thai','IBM Plex Sans',sans-serif}
-.sc-btn:hover:not([disabled]){background:var(--bg3);color:var(--text)}
-.sc-btn[disabled]{opacity:.35;cursor:default}
-.sc-btn.primary{background:#1b5e20;color:#fff;border-color:#1b5e20}
-.sc-btn.primary:hover{background:#2e7d32}
-
-.sc-step-dots{display:flex;gap:5px}
-.sc-dot{width:7px;height:7px;border-radius:50%;background:var(--bg3);
-  transition:background .2s;cursor:pointer}
+/* ── Controls: always same position ── */
+.sc-ctrl{display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.sc-btn-sec{padding:.55rem 1.3rem;border-radius:6px;border:1px solid var(--border);
+  background:var(--bg2);color:var(--text2);cursor:pointer;font-size:13.5px;font-weight:500;
+  transition:all .15s;font-family:'IBM Plex Sans Thai','IBM Plex Sans',sans-serif;min-width:100px}
+.sc-btn-sec:hover:not([disabled]){background:var(--bg3)}
+.sc-btn-sec[disabled]{opacity:.3;cursor:default}
+.sc-btn-pri{padding:.55rem 1.3rem;border-radius:6px;border:none;
+  background:#1b5e20;color:#fff;cursor:pointer;font-size:13.5px;font-weight:500;
+  transition:background .15s;font-family:'IBM Plex Sans Thai','IBM Plex Sans',sans-serif;min-width:100px}
+.sc-btn-pri:hover{background:#2e7d32}
+.sc-btn-pri[disabled]{opacity:.3;cursor:default}
+.sc-dots{display:flex;gap:5px}
+.sc-dot{width:7px;height:7px;border-radius:50%;background:var(--bg3);cursor:pointer;transition:background .2s}
 .sc-dot.active{background:#1b5e20}
 </style>
 
-<!-- ═══ SCRIPT ═══ -->
 <script>
-/* ═══════════════════════════════
-   DATA — all three scenes
-═══════════════════════════════ */
+/* ═══ DATA ═══ */
 const SCENES = {
-  pki: {
-    name:'PKI Build Flow',
-    steps:[
-      {
-        title:'Lab Environment Overview',
-        text:'Lab มี 4 servers ที่มีบทบาทต่างกัน — ROOTCA อยู่ offline เสมอ, ISSUINGCA ออก cert ให้ user, DC01 เป็น KDC, CLIENT01 คือเครื่องของ user',
-        fn: () => {
-          show(['pki-rootca','pki-issuingca','pki-dc01','pki-client']);
-          hide(['ar-root-issuing','ar-req','ar-cer','ar-issuing-dc','ar-issuing-client',
-                'lbl-files','lbl-req','lbl-cer','rootca-cert','ad-published','file-req','file-cer']);
-          hideInline(['rootca-badge','rootca-ca-ok','rootca-offline','issuingca-badge','issuingca-running']);
-          clearPKI();
-        }
-      },
-      {
-        title:'ROOTCA: Install AD CS Role',
-        text:'ติดตั้ง AD CS บน ROOTCA และ configure เป็น Standalone Root CA (ไม่ join domain) ใช้ RSA 2048 + SHA-256, validity 10–20 ปี',
-        fn: () => {
-          show(['pki-rootca']); hl('pki-rootca');
-          showInline(['rootca-badge']);
-        }
-      },
-      {
-        title:'ROOTCA: Generate Self-Signed Certificate',
-        text:'ROOTCA สร้าง cert ที่เซ็นตัวเองเป็น Trust Anchor ของทั้ง PKI — Issuer = Subject = LAB-RootCA, Public Key RSA 2048 stored in ROOTCA\'s key store',
-        fn: () => {
-          show(['rootca-cert']); hl('pki-rootca');
-          ['sc-cf-ver','sc-cf-issuer','sc-cf-subject','sc-cf-key','sc-cf-sig'].forEach(c=>{
-            document.querySelector('.'+c)?.classList.add('show');
-          });
-        }
-      },
-      {
-        title:'ROOTCA: Publish CRL → Export Both Files',
-        text:'Publish CRL ก่อน export! Files อยู่ที่ C:\\Windows\\System32\\CertSrv\\CertEnroll\\ — ต้อง copy ทั้ง .crt และ .crl ไปที่ ISSUINGCA และ DC01',
-        fn: () => {
-          document.querySelector('.sc-cf-crl')?.classList.add('show');
-          show(['rootca-cert']); hl('pki-rootca');
-        }
-      },
-      {
-        title:'Files Transfer: ROOTCA → ISSUINGCA + DC01',
-        text:'LAB-RootCA.crt และ LAB-RootCA.crl ถูก copy ไปที่ ISSUINGCA และ DC01 — ขาดไฟล์ใดไฟล์หนึ่งทำให้ Smart Card login ล้มเหลวทั้งหมด',
-        fn: () => {
-          show(['ar-root-issuing','ar-issuing-dc','ar-issuing-client','lbl-files']);
-          hl(null); showInline(['rootca-offline']);
-        }
-      },
-      {
-        title:'ISSUINGCA: Publish to AD + Generate .req',
-        text:'ISSUINGCA import ไฟล์ลง local store → publish ลง AD via certutil -dspublish → install AD CS Role → configure เป็น Enterprise Subordinate CA → สร้าง ISSUINGCA.req',
-        fn: () => {
-          hl('pki-issuingca'); showInline(['issuingca-badge']);
-          show(['ad-published','file-req']);
-        }
-      },
-      {
-        title:'.req → ROOTCA → Signed .cer',
-        text:'ISSUINGCA.req ส่งไปที่ ROOTCA (power on ชั่วคราว) → ROOTCA submit request → Issue → export IssuingCA_Signed.cer (Base-64 format!) → ส่งกลับ ISSUINGCA → Shut down ROOTCA',
-        fn: () => {
-          show(['ar-req','ar-cer','lbl-req','lbl-cer','file-cer']); hl('pki-rootca');
-          hideInline(['rootca-offline']);
-        }
-      },
-      {
-        title:'ISSUINGCA: Install .cer → CA Running ✓',
-        text:'ISSUINGCA install IssuingCA_Signed.cer → Start Service → CA icon เปลี่ยนเป็นสีเขียว → Publish Issuing CA CRL ทันที — ROOTCA shut down อีกครั้งทันที',
-        fn: () => {
-          hl('pki-issuingca'); showInline(['issuingca-running']);
-          showInline(['rootca-offline']); hide(['file-req','file-cer']);
-        }
-      }
-    ]
-  },
-
-  cert: {
-    name:'Certificate Anatomy',
-    steps:[
-      {
-        title:'X.509 Certificate — โครงสร้างภาพรวม',
-        text:'X.509 v3 certificate ประกอบด้วยหลาย fields ที่แต่ละฝ่ายใช้ต่างกัน คลิก Next เพื่อดูทีละ field',
-        fn: () => {
-          document.querySelectorAll('.sc-cert-section').forEach(el=>el.classList.remove('active'));
-          document.getElementById('ct-type').textContent='';
-        }
-      },
-      {
-        title:'Serial Number — ตัวระบุไม่ซ้ำ',
-        text:'CA กำหนด serial number ที่ไม่ซ้ำกันสำหรับทุก cert ที่ออก KDC ใช้ serial number ตรวจกับ CRL ว่า cert ถูก revoke แล้วหรือยัง',
-        fn: () => { certActivate('cs-serial','User Cert'); }
-      },
-      {
-        title:'Issuer — ใคร sign cert นี้',
-        text:'ระบุ CA ที่ออก cert นี้ — DC จะ trace chain จาก Issuer ขึ้นไปจนถึง Root CA เพื่อ verify ทั้ง chain',
-        fn: () => { certActivate('cs-issuer'); }
-      },
-      {
-        title:'Validity Period — cert มีอายุ 1 ปี',
-        text:'notBefore ถึง notAfter — ถ้า current time อยู่นอก range นี้ KDC reject ทันที WHfB cert มักตั้ง 1 ปีพร้อม auto-renew ที่ 80% ของ lifetime',
-        fn: () => { certActivate('cs-validity'); }
-      },
-      {
-        title:'Subject + SAN — identity ของ owner',
-        text:'Subject ระบุ CN ของ user, SAN (Subject Alternative Name) ระบุ UPN ที่ DC ใช้ map cert → AD user object — ถ้า UPN ไม่ match login ล้มเหลว',
-        fn: () => { certActivate('cs-subject'); certActivate('cs-san'); }
-      },
-      {
-        title:'SubjectPublicKeyInfo — Public Key ที่ผูกกับ TPM',
-        text:'นี่คือ public key ที่คู่กับ private key ใน TPM ของ device — private key ไม่เคยออกจาก TPM DC ใช้ public key นี้ verify signature ที่ client ส่งมาตอน PKINIT',
-        fn: () => { certActivate('cs-pubkey'); }
-      },
-      {
-        title:'EKU — Smart Card Logon OID บังคับ',
-        text:'Extended Key Usage OID 1.3.6.1.4.1.311.20.2.2 (Smart Card Logon) บังคับสำหรับ VSC login — ถ้าไม่มี OID นี้ KDC reject cert ทันทีโดยไม่ดูอย่างอื่น',
-        fn: () => { certActivate('cs-eku'); }
-      },
-      {
-        title:'CDP / AIA — ที่อยู่ดาวน์โหลด CRL',
-        text:'CRL Distribution Point (CDP) บอก KDC ว่าต้อง download CRL จากที่ไหน — ถ้า DC เข้า CDP ไม่ได้ = CRYPT_E_REVOCATION_OFFLINE = login ล้มเหลว',
-        fn: () => { certActivate('cs-cdp'); certActivate('cs-sig'); }
-      }
-    ]
-  },
-
-  pkinit: {
-    name:'Kerberos PKINIT',
-    steps:[
-      {
-        title:'การ login ด้วย Smart Card — ภาพรวม',
-        text:'Kerberos PKINIT (RFC 4556) ใช้ asymmetric cryptography แทน password ทั้ง 9 ขั้นตอนนี้เกิดขึ้นภายในไม่กี่วินาทีตอนที่ user ใส่ PIN',
-        fn: () => {
-          clearPKINIT();
-          document.getElementById('pk-port').style.display='none';
-        }
-      },
-      {
-        title:'Step 1: User ใส่ PIN',
-        text:'User พิมพ์ PIN ที่ lock screen — PIN ไม่ออกจากเครื่อง ไม่ส่งผ่านเครือข่าย เป็นแค่ gesture ที่ unlock การใช้ private key ใน TPM',
-        fn: () => { addClientEvent('🔢 User enters PIN','ok'); pkDetail('PIN ไม่ออกจาก device — เป็นแค่ local auth gesture'); }
-      },
-      {
-        title:'Step 2: TPM Unlocks Private Key',
-        text:'TPM ตรวจสอบ PIN gesture แล้วให้ signing operation ดำเนินต่อ — private key ยังอยู่ใน TPM เสมอ ไม่มีใครเอาออกมาได้',
-        fn: () => { addClientEvent('🔒 TPM unlocks private key','ok'); pkDetail('Private key ไม่เคย leave TPM chip — fixedTPM=1 flag ใน key attributes'); }
-      },
-      {
-        title:'Step 3: Build AS_REQ',
-        text:'CLIENT01 สร้าง AS-REQ packet ที่ประกอบด้วย: user cert + cryptographic signature (TPM เซ็น nonce ด้วย private key) + AuthPack ที่มี paChecksum',
-        fn: () => { addClientEvent('📦 Build AS_REQ + sign','ok'); pkDetail('AuthPack.paChecksum = SHA256(KDC-REQ-BODY) — bind signature เข้ากับ request body ป้องกัน substitution attack'); }
-      },
-      {
-        title:'Step 4: Send AS_REQ → DC01 Port 88',
-        text:'AS_REQ ส่งไปที่ DC01 port 88 (Kerberos) — ไม่มี password ใน packet นี้เลย มีแค่ cert + signature',
-        fn: () => {
-          document.getElementById('pk-port').style.display='block';
-          document.getElementById('pk-msg1').classList.add('show');
-          document.getElementById('pk-msg-name').textContent='AS_REQ + cert + sig';
-          pkDetail('Port 88/TCP (หรือ UDP) คือ Kerberos port มาตรฐาน');
-        }
-      },
-      {
-        title:'Step 5: KDC Traces Certificate Chain',
-        text:'KDC ตรวจ cert chain: LabUser01 cert ← LAB-IssuingCA ← LAB-RootCA ← (Root ต้องอยู่ใน NTAuthCertificates store ของ AD)',
-        fn: () => { addDCEvent('🔍 Trace chain: User←IssCA←Root','ok'); pkDetail('Root CA ต้องอยู่ใน NTAuthCertificates ใน AD — ถ้าไม่มี KDC reject ทันที'); }
-      },
-      {
-        title:'Step 6: KDC Downloads CRL — Check Revocation',
-        text:'⚠ นี่คือจุดที่ fail บ่อยที่สุด — KDC download CRL จาก LDAP แล้วตรวจว่า serial number ของ user cert อยู่ใน revoked list ไหม ถ้า CRL download ไม่ได้ = login ล้มเหลว',
-        fn: () => { addDCEvent('📥 Download CRL from LDAP','warn'); pkDetail('CERT_TRUST_IS_OFFLINE_REVOCATION = CRL ดาวน์โหลดไม่ได้ — ต้อง publish CRL และ import ลง local store ของ DC'); }
-      },
-      {
-        title:'Step 7: KDC Looks Up User in AD',
-        text:'KDC ค้นหา LabUser01@lab.local จาก UPN ใน SAN ของ cert → ต้องพบ user object ใน Active Directory และ account ต้องไม่ถูก disable',
-        fn: () => { addDCEvent('👤 Lookup LabUser01 in AD','ok'); pkDetail('SAN (UPN) ใน cert ต้องตรงกับ userPrincipalName attribute ของ AD user object'); }
-      },
-      {
-        title:'Step 8: All Checks Pass → Issue TGT',
-        text:'ทุก checks ผ่านหมด — KDC ออก Ticket-Granting Ticket (TGT) ที่ encrypt ด้วย krbtgt key ของ domain',
-        fn: () => {
-          addDCEvent('✓ All checks passed','ok');
-          document.getElementById('pk-msg2').classList.add('show');
-          document.getElementById('pk-msg-name2').textContent='AS_REP + TGT';
-          pkDetail('TGT encrypted with krbtgt key — client ใช้ TGT ขอ service tickets ต่อไปได้');
-        }
-      },
-      {
-        title:'Step 9: TGT Received → Desktop Loads',
-        text:'CLIENT01 รับ TGT → ใช้ TGT ขอ session ticket สำหรับ logon service → LabUser01 desktop โหลดขึ้นมาภายใน 5-15 วินาที',
-        fn: () => { addClientEvent('🎉 Desktop loaded!','ok'); pkDetail('ทั้ง 9 steps เกิดขึ้นในเวลาไม่กี่วินาที โดยไม่มี password ผ่านเครือข่ายเลยแม้แต่ครั้งเดียว'); }
-      }
-    ]
-  }
+  pki:{name:'PKI Build Flow',steps:[
+    {t:'Lab Environment Overview',
+     d:'Lab มี 4 servers — ROOTCA อยู่ offline เสมอ, ISSUINGCA ออก cert, DC01 เป็น KDC, CLIENT01 คือเครื่อง user',
+     f:()=>{ showN(['nd-rootca','nd-issuing','nd-dc01','nd-client']); hl(null); }},
+    {t:'ROOTCA: Install AD CS → Standalone Root CA',
+     d:'ติดตั้ง AD CS และ configure เป็น Standalone CA (ไม่ join domain) — RSA 2048, SHA-256, validity 10-20 ปี',
+     f:()=>{ hl('nd-rootca'); bdShow(['b-standalone']); }},
+    {t:'ROOTCA: สร้าง Self-Signed Certificate',
+     d:'ROOTCA สร้าง cert ที่เซ็นตัวเอง (Issuer = Subject = LAB-RootCA) — นี่คือ Trust Anchor ของ PKI ทั้งหมด',
+     f:()=>{ hl('nd-rootca'); showC('cc-root'); ccShow(['cc-issuer','cc-subject','cc-key']); }},
+    {t:'ROOTCA: Publish CRL แล้ว Export ทั้งสองไฟล์',
+     d:'ต้อง publish CRL ก่อน export เสมอ — copy ทั้ง .crt และ .crl ออกจาก CertEnroll ไปที่ ISSUINGCA + DC01',
+     f:()=>{ ccShow(['cc-crl']); }},
+    {t:'File Transfer: ROOTCA → ISSUINGCA + DC01',
+     d:'LAB-RootCA.crt และ LAB-RootCA.crl ถูก copy ไปทั้งสองเครื่อง — ขาดไฟล์ใดไฟล์หนึ่ง Smart Card login ล้มเหลวทั้งหมด',
+     f:()=>{ hl(null); arShow(['ar1','ar2','ar3','lb1','lb2']); bdShow(['b-offline']); }},
+    {t:'ISSUINGCA: Import ไฟล์ + Publish to AD + สร้าง .req',
+     d:'Import ไฟล์ลง local store → publish ลง AD → install AD CS Role → configure Enterprise Sub-CA → สร้าง ISSUINGCA.req',
+     f:()=>{ hl('nd-issuing'); bdShow(['b-subca','b-adpub','b-req']); }},
+    {t:'.req → ROOTCA sign → .cer กลับ ISSUINGCA',
+     d:'ISSUINGCA.req ส่งไป ROOTCA (power on ชั่วคราว) → submit → issue → export Base-64 .cer → ส่งกลับ → shut down ROOTCA',
+     f:()=>{ hl('nd-rootca'); arShow(['ar4','ar5','lb3','lb4']); }},
+    {t:'ISSUINGCA: Install .cer → CA Running ✓',
+     d:'Install IssuingCA_Signed.cer → Start Service → CA icon สีเขียว → Publish Issuing CA CRL ทันที — ROOTCA shut down',
+     f:()=>{ hl('nd-issuing'); bdShow(['b-carun']); }},
+  ]},
+  cert:{name:'Certificate Anatomy',steps:[
+    {t:'X.509 Certificate — ภาพรวม',d:'X.509 v3 มีหลาย fields ที่แต่ละฝ่ายใช้ต่างกัน — คลิก Next ดูทีละ field',
+     f:()=>{ document.querySelectorAll('.cert-sec').forEach(e=>e.classList.remove('active')); document.getElementById('ct-tag').textContent=''; }},
+    {t:'Serial Number',d:'CA กำหนด serial ไม่ซ้ำกันทุก cert — KDC ใช้ serial ตรวจกับ CRL ว่า cert ถูก revoke แล้วหรือยัง',
+     f:()=>{ certOn('cs-serial','User Cert'); }},
+    {t:'Issuer — ใคร sign cert นี้',d:'ระบุ CA ที่ออก cert — DC trace chain จาก Issuer ขึ้นไปจนถึง Root CA เพื่อ verify ทั้งสาย',
+     f:()=>{ certOn('cs-issuer'); }},
+    {t:'Validity Period',d:'notBefore ถึง notAfter — อยู่นอก range = KDC reject ทันที WHfB cert มักใช้ 1 ปี + auto-renew',
+     f:()=>{ certOn('cs-validity'); }},
+    {t:'Subject + SAN',d:'Subject ระบุ CN ของ user, SAN (UPN) ใช้ map cert → AD user object — UPN mismatch = login ล้มเหลว',
+     f:()=>{ certOn('cs-subject'); certOn('cs-san'); }},
+    {t:'SubjectPublicKeyInfo — TPM-bound',d:'Public key คู่กับ private key ใน TPM — private key ไม่เคยออกจาก TPM chip DC ใช้ verify PKINIT signature',
+     f:()=>{ certOn('cs-pubkey'); }},
+    {t:'EKU — Smart Card Logon OID บังคับ',d:'OID 1.3.6.1.4.1.311.20.2.2 บังคับ — ถ้าไม่มี OID นี้ KDC reject cert ทันทีโดยไม่ดูอย่างอื่น',
+     f:()=>{ certOn('cs-eku'); }},
+    {t:'CDP / AIA — ที่อยู่ดาวน์โหลด CRL',d:'KDC download CRL จาก CDP เพื่อ check revocation — ถ้า unreachable = CRYPT_E_REVOCATION_OFFLINE = login fail',
+     f:()=>{ certOn('cs-cdp'); certOn('cs-sig'); }},
+  ]},
+  pkinit:{name:'Kerberos PKINIT',steps:[
+    {t:'Kerberos PKINIT — ภาพรวม',d:'9 steps นี้เกิดขึ้นในไม่กี่วินาทีตอน user ใส่ PIN — ไม่มี password ผ่านเครือข่ายแม้แต่ครั้งเดียว',
+     f:()=>{ clearPK(); document.getElementById('pk-port').style.display='none'; }},
+    {t:'Step 1: User ใส่ PIN',d:'PIN ไม่ออกจากเครื่อง ไม่ส่งผ่านเครือข่าย — เป็น local gesture ที่ unlock private key ใน TPM เท่านั้น',
+     f:()=>{ addEvt('pk-cevts','🔢 User enters PIN','ok'); pkDet('PIN = local gesture, ไม่ใช่ password'); }},
+    {t:'Step 2: TPM Unlocks Private Key',d:'TPM ตรวจสอบ PIN แล้วอนุญาต signing operation — private key ยังอยู่ใน TPM เสมอ',
+     f:()=>{ addEvt('pk-cevts','🔒 TPM unlocks private key','ok'); pkDet('fixedTPM=1 — private key ออกจาก TPM ไม่ได้เลย'); }},
+    {t:'Step 3: Build AS_REQ + Sign',d:'CLIENT01 สร้าง AS-REQ: user cert + ECDSA signature + paChecksum = SHA256(KDC-REQ-BODY)',
+     f:()=>{ addEvt('pk-cevts','📦 Build AS_REQ + sign','ok'); pkDet('paChecksum bind signature เข้ากับ request body ป้องกัน substitution attack'); }},
+    {t:'Step 4: Send AS_REQ → DC01 Port 88',d:'ส่ง AS_REQ ไปที่ DC01 port 88 — ไม่มี password ใน packet มีแค่ cert + signature',
+     f:()=>{ document.getElementById('pk-port').style.display='flex'; pkFwd('AS_REQ + cert + sig'); }},
+    {t:'Step 5: KDC Traces Certificate Chain',d:'KDC trace chain: LabUser01 ← LAB-IssuingCA ← LAB-RootCA — Root ต้องอยู่ใน NTAuthCertificates ของ AD',
+     f:()=>{ addEvt('pk-devts','🔍 Trace cert chain','ok'); pkDet('Root CA ไม่อยู่ใน NTAuth = KDC reject ทันที'); }},
+    {t:'Step 6: ⚠ KDC Downloads CRL — Check Revocation',d:'จุดที่ fail บ่อยที่สุด — KDC download CRL จาก LDAP แล้วตรวจว่า serial ของ cert อยู่ใน revoked list ไหม',
+     f:()=>{ addEvt('pk-devts','📥 Download CRL — check revocation','warn'); pkDet('CRL ดาวน์โหลดไม่ได้ = CERT_TRUST_IS_OFFLINE_REVOCATION = login ล้มเหลว'); }},
+    {t:'Step 7: KDC Looks Up User in AD',d:'KDC ค้นหา LabUser01@lab.local จาก UPN ใน SAN — user ต้องมีอยู่ใน AD และ account ไม่ถูก disable',
+     f:()=>{ addEvt('pk-devts','👤 Lookup LabUser01 in AD','ok'); pkDet('UPN ใน SAN ต้องตรงกับ userPrincipalName attribute ของ AD user object'); }},
+    {t:'Step 8: All Checks Pass → Issue TGT',d:'ทุก checks ผ่าน — KDC ออก Ticket-Granting Ticket (TGT) encrypted ด้วย krbtgt key',
+     f:()=>{ addEvt('pk-devts','✓ Issue Kerberos TGT','ok'); pkBwd('AS_REP + TGT'); }},
+    {t:'Step 9: TGT Received → Desktop Loads',d:'CLIENT01 รับ TGT → ขอ session ticket → LabUser01 desktop โหลดขึ้นมาภายใน 5-15 วินาที',
+     f:()=>{ addEvt('pk-cevts','🎉 Desktop loaded!','ok'); pkDet('ทั้งกระบวนการใช้เวลาไม่กี่วินาที โดยไม่มี password ผ่านเครือข่ายเลย'); }},
+  ]},
 };
 
-/* ═══ RUNTIME ═══ */
+/* ═══ STATE ═══ */
 let curScene='pki', curStep=0;
+// cumulative element tracking per scene
+const shown = {nd:new Set(), ar:new Set(), bd:new Set(), cc:false, ccF:new Set()};
+
+/* ═══ RENDER ═══ */
+function renderStep(){
+  const sc=SCENES[curScene], s=sc.steps[curStep], tot=sc.steps.length;
+  if(s.f) s.f();
+  document.getElementById('sc-title').textContent=s.t;
+  document.getElementById('sc-body').textContent=s.d;
+  document.getElementById('sc-lbl').textContent=`Step ${curStep+1} of ${tot}`;
+  document.getElementById('sc-fill').style.width=`${((curStep+1)/tot)*100}%`;
+  document.getElementById('sc-back').disabled=(curStep===0);
+  document.getElementById('sc-next').disabled=(curStep===tot-1);
+  const dots=document.getElementById('sc-dots');
+  dots.innerHTML=sc.steps.map((_,i)=>`<div class="sc-dot${i===curStep?' active':''}" onclick="jump(${i})"></div>`).join('');
+}
+
+function nextStep(){ if(curStep<SCENES[curScene].steps.length-1){curStep++;renderStep();} }
+function prevStep(){ if(curStep>0){curStep--;renderStep();} }
 
 function setScene(id){
   curScene=id; curStep=0;
   document.querySelectorAll('.sc-scene').forEach(s=>s.classList.remove('active'));
   document.getElementById('scene-'+id).classList.add('active');
-  document.querySelectorAll('.sc-tab').forEach(t=>t.classList.remove('active'));
   document.querySelectorAll('.sc-tab').forEach(t=>{
-    if(t.textContent.includes(SCENES[id].name.slice(0,5))) t.classList.add('active');
+    const names={pki:'PKI',cert:'Certificate',pkinit:'Kerberos'};
+    t.classList.toggle('active',t.textContent.includes(names[id]));
   });
-  renderStep();
+  resetAll(); renderStep();
 }
 
-function nextStep(){
-  const s=SCENES[curScene];
-  if(curStep<s.steps.length-1){ curStep++; renderStep(); }
-}
-function prevStep(){
-  if(curStep>0){ curStep--; renderStep(); }
+function jump(i){
+  resetAll();
+  for(let j=0;j<=i;j++){ curStep=j; const s=SCENES[curScene].steps[j]; if(s.f) s.f(); }
+  curStep=i; renderStep();
 }
 
-function renderStep(){
-  const s=SCENES[curScene];
-  const step=s.steps[curStep];
-  const total=s.steps.length;
-
-  // Run step function
-  if(step.fn) step.fn();
-
-  // UI
-  document.getElementById('sc-desc-title').textContent=step.title;
-  document.getElementById('sc-desc-text').textContent=step.text;
-  document.getElementById('sc-step-label').textContent=`Step ${curStep+1} of ${total}`;
-  document.getElementById('sc-progress-fill').style.width=`${((curStep+1)/total)*100}%`;
-  document.getElementById('sc-btn-back').disabled=(curStep===0);
-  document.getElementById('sc-btn-next').disabled=(curStep===total-1);
-
-  // Dots
-  const dots=document.getElementById('sc-dots');
-  dots.innerHTML=s.steps.map((_,i)=>`<div class="sc-dot ${i===curStep?'active':''}" onclick="jumpStep(${i})"></div>`).join('');
-}
-
-function jumpStep(i){
-  // Play through steps sequentially to accumulate state
-  const target=i;
-  resetScene();
-  for(let j=0;j<=target;j++){
-    curStep=j;
-    const step=SCENES[curScene].steps[j];
-    if(step.fn) step.fn();
-  }
-  curStep=target;
-  renderStep();
-}
-
-function resetScene(){
-  // Reset PKI
-  hide(['pki-rootca','pki-issuingca','pki-dc01','pki-client',
-        'rootca-cert','ar-root-issuing','ar-issuing-dc','ar-issuing-client',
-        'ar-req','ar-cer','lbl-files','lbl-req','lbl-cer','ad-published','file-req','file-cer']);
-  hideInline(['rootca-badge','rootca-ca-ok','rootca-offline','issuingca-badge','issuingca-running']);
-  document.querySelectorAll('.sc-certcard-row').forEach(el=>el.classList.remove('show'));
-  // Reset cert
-  document.querySelectorAll('.sc-cert-section').forEach(el=>el.classList.remove('active'));
-  // Reset pkinit
-  clearPKINIT();
-}
-
-/* ── Helpers ── */
-function show(ids){ ids.forEach(id=>{ const el=document.getElementById(id); if(el) el.classList.add('show'); }); }
-function hide(ids){ ids.forEach(id=>{ const el=document.getElementById(id); if(el) el.classList.remove('show'); }); }
-function showInline(ids){ ids.forEach(id=>{ const el=document.getElementById(id); if(el) el.style.display='block'; }); }
-function hideInline(ids){ ids.forEach(id=>{ const el=document.getElementById(id); if(el) el.style.display='none'; }); }
+/* ═══ HELPERS ═══ */
+function showN(ids){ ids.forEach(id=>{ const e=document.getElementById(id); if(e) e.classList.add('show'); }); }
 function hl(id){
-  document.querySelectorAll('.sc-node').forEach(n=>n.classList.remove('highlight'));
-  if(id){ const el=document.getElementById(id); if(el) el.classList.add('highlight'); }
+  document.querySelectorAll('.sc-nd').forEach(n=>n.classList.remove('hl'));
+  if(id){ const e=document.getElementById(id); if(e) e.classList.add('hl'); }
 }
-function clearPKI(){
-  document.querySelectorAll('.sc-certcard-row').forEach(el=>el.classList.remove('show'));
-  hl(null);
+function arShow(ids){ ids.forEach(id=>{ const e=document.getElementById(id); if(e) e.classList.add('show'); }); }
+function bdShow(ids){
+  ids.forEach(id=>{
+    const e=document.getElementById(id); if(e) e.style.display='inline';
+  });
 }
-function certActivate(id,tag){
-  const el=document.getElementById(id); if(el) el.classList.add('active');
-  if(tag) document.getElementById('ct-type').textContent=tag;
+function showC(id){ const e=document.getElementById(id); if(e) e.classList.add('show'); }
+function ccShow(ids){ ids.forEach(id=>{ const e=document.getElementById(id); if(e) e.classList.add('show'); }); }
+
+function certOn(id,tag){
+  const e=document.getElementById(id); if(e) e.classList.add('active');
+  if(tag) document.getElementById('ct-tag').textContent=tag;
 }
-function addClientEvent(text,type){
-  const c=document.getElementById('pk-client-events');
+
+function addEvt(cid,txt,type){
+  const c=document.getElementById(cid); if(!c) return;
   const d=document.createElement('div');
-  d.className=`sc-pk-event ${type} show`; d.textContent=text; c.appendChild(d);
+  d.className=`pk-evt ${type} show`; d.textContent=txt; c.appendChild(d);
+  c.scrollTop=c.scrollHeight;
 }
-function addDCEvent(text,type){
-  const c=document.getElementById('pk-dc-events');
-  const d=document.createElement('div');
-  d.className=`sc-pk-event ${type} show`; d.textContent=text; c.appendChild(d);
-}
-function pkDetail(text){
-  const el=document.getElementById('pk-detail');
-  el.textContent=text; el.classList.add('show');
-}
-function clearPKINIT(){
-  document.getElementById('pk-client-events').innerHTML='';
-  document.getElementById('pk-dc-events').innerHTML='';
-  document.getElementById('pk-msg1').classList.remove('show');
-  document.getElementById('pk-msg2').classList.remove('show');
+function pkFwd(txt){ const e=document.getElementById('pk-fwd'); e.classList.add('show'); document.getElementById('pk-fwd-txt').textContent=txt; }
+function pkBwd(txt){ const e=document.getElementById('pk-bwd'); e.classList.add('show'); document.getElementById('pk-bwd-txt').textContent=txt; }
+function pkDet(txt){ const e=document.getElementById('pk-detail'); e.textContent=txt; e.classList.add('show'); }
+function clearPK(){
+  document.getElementById('pk-cevts').innerHTML='';
+  document.getElementById('pk-devts').innerHTML='';
+  document.getElementById('pk-fwd').classList.remove('show');
+  document.getElementById('pk-bwd').classList.remove('show');
   document.getElementById('pk-detail').classList.remove('show');
 }
 
-// Init
+function resetAll(){
+  // nodes
+  document.querySelectorAll('.sc-nd').forEach(e=>{ e.classList.remove('show','hl'); });
+  // arrows
+  document.querySelectorAll('.sc-ar,.sc-lb').forEach(e=>e.classList.remove('show'));
+  // badges (keep static ones, hide dynamic)
+  ['b-standalone','b-offline','b-subca','b-carun','b-adpub','b-req'].forEach(id=>{
+    const e=document.getElementById(id); if(e) e.style.display='none';
+  });
+  // cert card
+  const cc=document.getElementById('cc-root'); if(cc) cc.classList.remove('show');
+  document.querySelectorAll('.cc-row').forEach(e=>e.classList.remove('show'));
+  // cert anatomy
+  document.querySelectorAll('.cert-sec').forEach(e=>e.classList.remove('active'));
+  document.getElementById('ct-tag').textContent='';
+  // pkinit
+  clearPK();
+}
+
 renderStep();
 </script>
