@@ -18,7 +18,7 @@
 
     <!-- PKI BUILD -->
     <div class="sc-scene active" id="scene-pki">
-      <svg class="sc-svg" viewBox="0 0 620 300" xmlns="http://www.w3.org/2000/svg">
+      <svg class="sc-svg" viewBox="0 0 620 300" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
         <defs>
           <marker id="mA" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="5" markerHeight="5" orient="auto">
             <path d="M1 1L7 4L1 7" fill="none" stroke="#64ffda" stroke-width="1.5" stroke-linecap="round"/>
@@ -52,7 +52,7 @@
       </svg>
 
       <!-- Server nodes — fixed zones, no overlap -->
-      <div class="sc-nd" id="nd-rootca"  style="left:22px;top:18px">
+      <div class="sc-nd" id="nd-rootca"  style="left:3.5%;top:6%">
         <div class="nd-ico">🖥</div>
         <div class="nd-name">ROOTCA</div>
         <div class="nd-ip">192.168.1.20</div>
@@ -62,7 +62,7 @@
         </div>
       </div>
 
-      <div class="sc-nd" id="nd-issuing" style="left:220px;top:18px">
+      <div class="sc-nd" id="nd-issuing" style="left:35.5%;top:6%">
         <div class="nd-ico">🖥</div>
         <div class="nd-name">ISSUINGCA</div>
         <div class="nd-ip">192.168.1.30</div>
@@ -74,7 +74,7 @@
         </div>
       </div>
 
-      <div class="sc-nd" id="nd-dc01"    style="left:420px;top:8px">
+      <div class="sc-nd" id="nd-dc01"    style="left:67.7%;top:2.7%">
         <div class="nd-ico">🖥</div>
         <div class="nd-name">DC01</div>
         <div class="nd-ip">192.168.1.10</div>
@@ -83,7 +83,7 @@
         </div>
       </div>
 
-      <div class="sc-nd" id="nd-client"  style="left:420px;top:168px">
+      <div class="sc-nd" id="nd-client"  style="left:67.7%;top:56%">
         <div class="nd-ico">💻</div>
         <div class="nd-name">CLIENT01</div>
         <div class="nd-ip">192.168.1.50</div>
@@ -93,7 +93,7 @@
       </div>
 
       <!-- Cert card — bottom-left, compact -->
-      <div class="sc-certcard" id="cc-root" style="left:22px;bottom:12px">
+      <div class="sc-certcard" id="cc-root" style="left:3.5%;bottom:4%">
         <div class="cc-title">📜 LAB-RootCA.crt</div>
         <div class="cc-row" id="cc-issuer">Issuer: <b>CN=LAB-RootCA</b></div>
         <div class="cc-row" id="cc-subject">Subject: <b>CN=LAB-RootCA</b> <span class="cc-tag">Self-signed</span></div>
