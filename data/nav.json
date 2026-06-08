@@ -105,6 +105,32 @@
       ]
     },
     {
+      "group_to_add": {
+        "label": "PIN Management",
+        "sections": [
+          {
+            "id": "pin01",
+            "icon": "🔐",
+            "title": "Challenge/Response Calculator"
+          },
+          {
+            "id": "pin02",
+            "icon": "⚡",
+            "title": "Admin Key Generator"
+          },
+          {
+            "id": "pin03",
+            "icon": "🛠",
+            "title": "Command Builder"
+          },
+          {
+            "id": "pin04",
+            "icon": "✅",
+            "title": "PIN Policy Validator"
+          }
+        ]
+      },
+    {
       "id": "vsc",
       "label": "Virtual Smart Card",
       "short": "VSC",
