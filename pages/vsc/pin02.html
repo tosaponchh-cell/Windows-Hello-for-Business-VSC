@@ -1,0 +1,164 @@
+<div class="page-header">
+  <div class="ph-num" style="background:#1a3a5c">PIN — TOOL 2</div>
+  <h1>Admin Key Generator</h1>
+  <p class="ph-sub">สร้าง Admin Key แบบ Cryptographically Secure สำหรับใช้ตอน Create VSC</p>
+</div>
+
+<div class="callout warn">
+  <strong>⚠ บันทึก Admin Key ทันทีหลัง Generate</strong> — ถ้าหาย VSC นั้นไม่สามารถ Reset PIN ได้เลย ต้อง Destroy + Create ใหม่
+</div>
+
+<div class="pin-tool-card">
+  <div class="p2-header-row">
+    <div>
+      <div class="pin-label">Admin Key ที่ Generate ได้</div>
+      <div class="pin-hint" style="font-size:.82rem;color:var(--fg-muted,#718096)">48 hex characters — 24 bytes — 3DES key</div>
+    </div>
+    <button class="pin-btn p2-gen-btn" onclick="p2Generate()">⚡ Generate New Key</button>
+  </div>
+
+  <div id="p2-key-display" class="p2-key-box mono">
+    <span class="p2-placeholder">กด Generate เพื่อสร้าง Admin Key ใหม่</span>
+  </div>
+
+  <div id="p2-actions" style="display:none">
+    <div class="p2-action-row">
+      <button class="pin-copy-btn p2-action-btn" onclick="p2Copy('full')">📋 Copy Full Key</button>
+      <button class="pin-copy-btn p2-action-btn" onclick="p2Copy('spaced')">📋 Copy with Spaces</button>
+      <button class="pin-copy-btn p2-action-btn p2-danger-btn" onclick="p2Clear()">🗑 Clear</button>
+    </div>
+    <div id="p2-copy-msg" class="pin-copy-msg"></div>
+  </div>
+
+  <div id="p2-strength" style="display:none;margin-top:1.2rem">
+    <div class="pin-label" style="margin-bottom:.6rem">Key Analysis</div>
+    <div class="p2-analysis-grid">
+      <div class="p2-analysis-item">
+        <span class="p2-a-label">Length</span>
+        <span class="p2-a-val ok" id="p2-len">48 / 48</span>
+      </div>
+      <div class="p2-analysis-item">
+        <span class="p2-a-label">Entropy</span>
+        <span class="p2-a-val ok" id="p2-entropy">— bits</span>
+      </div>
+      <div class="p2-analysis-item">
+        <span class="p2-a-label">Format</span>
+        <span class="p2-a-val ok" id="p2-format">Hex only</span>
+      </div>
+      <div class="p2-analysis-item">
+        <span class="p2-a-label">Pattern Check</span>
+        <span class="p2-a-val" id="p2-pattern">—</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="callout info" style="margin-top:1.5rem">
+  <strong>วิธีใช้:</strong> Generate → Copy → วางใน Password Vault ทันที →
+  ใช้ paste ตอนรัน <code>tpmvscmgr.exe create /name "..." /adminkey prompt /pin prompt /generate</code>
+</div>
+
+<div class="pin-tool-card" style="margin-top:1rem">
+  <div class="pin-label" style="margin-bottom:.8rem">ทำไมต้อง Generate ด้วยเครื่องมือนี้?</div>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>วิธีตั้ง Admin Key</th><th>ความปลอดภัย</th><th>เหตุผล</th></tr></thead>
+      <tbody>
+        <tr><td>พิมพ์เองด้วยมือ</td><td style="color:#fc8181">❌ ต่ำ</td><td>มนุษย์มักใช้ pattern เช่น AABBCC หรือ keyboard walk ที่เดาได้</td></tr>
+        <tr><td>/adminkey default</td><td style="color:#fc8181">❌ ต่ำมาก</td><td>ค่า default เป็นที่รู้จักสาธารณะ ทุกคนสามารถ reset ได้</td></tr>
+        <tr><td>เครื่องมือนี้ (CSPRNG)</td><td style="color:#48bb78">✅ สูง</td><td>ใช้ crypto.getRandomValues() — Cryptographically Secure Pseudo-Random Number Generator</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<style>
+.p2-header-row{display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;margin-bottom:1.2rem;flex-wrap:wrap;}
+.p2-gen-btn{width:auto;padding:.65rem 1.4rem;font-size:.9rem;margin-top:0;}
+.p2-key-box{background:#0d1117;border:1.5px solid #2d3748;border-radius:8px;padding:1.2rem 1.4rem;font-size:1.05rem;letter-spacing:.12em;color:#63b3ed;min-height:3.2rem;display:flex;align-items:center;word-break:break-all;line-height:1.8;}
+.p2-placeholder{color:#4a5568;font-size:.9rem;letter-spacing:normal;font-family:inherit;}
+.p2-action-row{display:flex;gap:.6rem;flex-wrap:wrap;margin-top:1rem;}
+.p2-action-btn{padding:.45rem 1rem;font-size:.85rem;}
+.p2-danger-btn{background:#742a2a !important;}
+.p2-analysis-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:.6rem;}
+.p2-analysis-item{background:#0d1117;border:1px solid #2d3748;border-radius:6px;padding:.6rem .9rem;display:flex;justify-content:space-between;align-items:center;}
+.p2-a-label{font-size:.82rem;color:#718096;}
+.p2-a-val{font-size:.9rem;font-weight:600;}
+.p2-a-val.ok{color:#48bb78;}
+.p2-a-val.warn{color:#f6ad55;}
+.p2-a-val.err{color:#fc8181;}
+</style>
+
+<script>
+(function(){
+  let currentKey='';
+
+  function isWeakPattern(hex){
+    const h=hex.toUpperCase();
+    // Check repeating pairs
+    const pairs=h.match(/../g);
+    const uniq=new Set(pairs);
+    if(uniq.size<8)return'มี repeating pattern';
+    // Check sequential
+    let seqCount=0;
+    for(let i=0;i<pairs.length-1;i++){
+      const a=parseInt(pairs[i],16),b=parseInt(pairs[i+1],16);
+      if(Math.abs(a-b)===1)seqCount++;
+    }
+    if(seqCount>10)return'มี sequential pattern';
+    return null;
+  }
+
+  window.p2Generate=function(){
+    const bytes=new Uint8Array(24);
+    crypto.getRandomValues(bytes);
+    const hex=Array.from(bytes).map(b=>b.toString(16).padStart(2,'0').toUpperCase()).join('');
+    currentKey=hex;
+
+    const display=document.getElementById('p2-key-display');
+    display.innerHTML='';
+    // Render in groups of 8 for readability
+    for(let i=0;i<48;i+=8){
+      const span=document.createElement('span');
+      span.textContent=hex.slice(i,i+8);
+      span.style.marginRight='.5rem';
+      display.appendChild(span);
+    }
+
+    document.getElementById('p2-actions').style.display='block';
+    document.getElementById('p2-strength').style.display='block';
+
+    // Entropy: 24 bytes random = 192 bits
+    document.getElementById('p2-entropy').textContent='192 bits';
+    document.getElementById('p2-len').textContent='48 / 48 ✅';
+
+    const pattern=isWeakPattern(hex);
+    const patEl=document.getElementById('p2-pattern');
+    if(pattern){
+      patEl.textContent='⚠ '+pattern;patEl.className='p2-a-val warn';
+    } else {
+      patEl.textContent='✅ ไม่มี pattern';patEl.className='p2-a-val ok';
+    }
+  };
+
+  window.p2Copy=function(mode){
+    if(!currentKey)return;
+    const val=mode==='spaced'
+      ? currentKey.match(/../g).join(' ')
+      : currentKey;
+    navigator.clipboard.writeText(val).then(()=>{
+      const msg=document.getElementById('p2-copy-msg');
+      msg.textContent=mode==='spaced'?'✅ Copied with spaces!':'✅ Copied!';
+      setTimeout(()=>msg.textContent='',2000);
+    });
+  };
+
+  window.p2Clear=function(){
+    currentKey='';
+    const display=document.getElementById('p2-key-display');
+    display.innerHTML='<span class="p2-placeholder">กด Generate เพื่อสร้าง Admin Key ใหม่</span>';
+    document.getElementById('p2-actions').style.display='none';
+    document.getElementById('p2-strength').style.display='none';
+  };
+})();
+</script>

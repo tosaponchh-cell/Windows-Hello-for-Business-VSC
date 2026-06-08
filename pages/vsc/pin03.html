@@ -1,0 +1,202 @@
+<div class="page-header">
+  <div class="ph-num" style="background:#1a3a5c">PIN — TOOL 3</div>
+  <h1>tpmvscmgr Command Builder</h1>
+  <p class="ph-sub">สร้างคำสั่ง tpmvscmgr.exe create ที่ถูกต้องสำหรับแต่ละ Use Case</p>
+</div>
+
+<div class="p3-layout">
+  <!-- LEFT: Form -->
+  <div class="p3-form-col">
+
+    <div class="p3-section-label">1 — ข้อมูลพื้นฐาน</div>
+
+    <div class="pin-field">
+      <label class="pin-label">ชื่อ VSC <span class="pin-hint">(ปรากฏใน Device Manager)</span></label>
+      <input id="p3-name" type="text" class="pin-input" value="HospitalVSC"
+        oninput="p3Build()" maxlength="64" placeholder="HospitalVSC">
+    </div>
+
+    <div class="p3-section-label">2 — Admin Key</div>
+
+    <div class="pin-field">
+      <label class="pin-label">Admin Key Type</label>
+      <div class="p3-radio-group" id="p3-adminkey-type">
+        <label class="p3-radio-label">
+          <input type="radio" name="p3ak" value="prompt" checked onchange="p3Build()">
+          <span><strong>PROMPT</strong> — IT พิมพ์เอง (Production ✅)</span>
+        </label>
+        <label class="p3-radio-label">
+          <input type="radio" name="p3ak" value="random" onchange="p3Build()">
+          <span><strong>RANDOM</strong> — สุ่มแล้วทิ้ง (Lab เท่านั้น ⚠)</span>
+        </label>
+        <label class="p3-radio-label">
+          <input type="radio" name="p3ak" value="default" onchange="p3Build()">
+          <span><strong>DEFAULT</strong> — ค่า Microsoft default (❌ ห้ามใช้ Production)</span>
+        </label>
+      </div>
+    </div>
+
+    <div class="p3-section-label">3 — PIN</div>
+
+    <div class="pin-field">
+      <label class="pin-label">PIN Type</label>
+      <div class="p3-radio-group">
+        <label class="p3-radio-label">
+          <input type="radio" name="p3pin" value="prompt" checked onchange="p3Build()">
+          <span><strong>PROMPT</strong> — ให้พิมพ์ PIN เอง (Production ✅)</span>
+        </label>
+        <label class="p3-radio-label">
+          <input type="radio" name="p3pin" value="default" onchange="p3Build()">
+          <span><strong>DEFAULT</strong> — PIN = 12345678 (Lab เท่านั้น)</span>
+        </label>
+      </div>
+    </div>
+
+    <div class="p3-section-label">4 — PUK (ไม่บังคับ)</div>
+
+    <div class="pin-field">
+      <label class="pin-label">เพิ่ม PUK ไหม?</label>
+      <div class="p3-radio-group">
+        <label class="p3-radio-label">
+          <input type="radio" name="p3puk" value="none" checked onchange="p3Build()">
+          <span><strong>ไม่ใช้</strong> — IT Reset ผ่าน Admin Key เท่านั้น</span>
+        </label>
+        <label class="p3-radio-label">
+          <input type="radio" name="p3puk" value="prompt" onchange="p3Build()">
+          <span><strong>PROMPT</strong> — User Unblock ด้วย PUK ได้เอง</span>
+        </label>
+      </div>
+    </div>
+
+    <div class="p3-section-label">5 — PIN Policy (ไม่บังคับ)</div>
+
+    <div class="pin-field">
+      <label class="pin-label">ความยาวขั้นต่ำ</label>
+      <input id="p3-minlen" type="number" class="pin-input" value="8" min="4" max="127"
+        oninput="p3Build()" style="width:100px">
+    </div>
+
+    <div class="p3-check-group">
+      <label class="p3-check-label">
+        <input type="checkbox" id="p3-upper" onchange="p3Build()">
+        <span>Uppercase required</span>
+      </label>
+      <label class="p3-check-label">
+        <input type="checkbox" id="p3-digits" onchange="p3Build()">
+        <span>Digits required</span>
+      </label>
+      <label class="p3-check-label">
+        <input type="checkbox" id="p3-special" onchange="p3Build()">
+        <span>Special characters required</span>
+      </label>
+    </div>
+
+  </div>
+
+  <!-- RIGHT: Output -->
+  <div class="p3-output-col">
+    <div class="p3-output-label">Command ที่ได้</div>
+    <div id="p3-command" class="p3-command-box mono"></div>
+    <button class="pin-copy-btn p3-copy-btn" onclick="p3Copy()">📋 Copy Command</button>
+    <div id="p3-copy-msg" class="pin-copy-msg"></div>
+
+    <div id="p3-warnings" class="p3-warn-list" style="margin-top:1rem"></div>
+
+    <div class="p3-output-label" style="margin-top:1.4rem">Parameter Breakdown</div>
+    <div id="p3-breakdown" class="p3-breakdown-list"></div>
+  </div>
+</div>
+
+<style>
+.p3-layout{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1rem;}
+@media(max-width:700px){.p3-layout{grid-template-columns:1fr;}}
+.p3-form-col,.p3-output-col{background:var(--surface,#1e2430);border:1px solid var(--border,#2d3748);border-radius:10px;padding:1.4rem;}
+.p3-section-label{font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#4a9eff;margin:1.1rem 0 .6rem;border-bottom:1px solid #2d3748;padding-bottom:.3rem;}
+.p3-section-label:first-child{margin-top:0;}
+.p3-radio-group{display:flex;flex-direction:column;gap:.5rem;}
+.p3-radio-label{display:flex;align-items:flex-start;gap:.6rem;cursor:pointer;font-size:.9rem;color:var(--fg,#e2e8f0);padding:.4rem .5rem;border-radius:5px;transition:background .15s;}
+.p3-radio-label:hover{background:#2d3748;}
+.p3-radio-label input{margin-top:.2rem;flex-shrink:0;}
+.p3-check-group{display:flex;flex-direction:column;gap:.4rem;}
+.p3-check-label{display:flex;align-items:center;gap:.6rem;cursor:pointer;font-size:.9rem;color:var(--fg,#e2e8f0);padding:.3rem .5rem;border-radius:5px;}
+.p3-check-label:hover{background:#2d3748;}
+.p3-output-label{font-size:.82rem;font-weight:700;color:#4a9eff;text-transform:uppercase;letter-spacing:.07em;margin-bottom:.6rem;}
+.p3-command-box{background:#0d1117;border:1.5px solid #2a5298;border-radius:8px;padding:1.1rem;font-size:.88rem;line-height:1.7;color:#63b3ed;word-break:break-all;min-height:80px;}
+.p3-copy-btn{margin-top:.8rem;padding:.45rem 1.1rem;}
+.p3-warn-list{display:flex;flex-direction:column;gap:.5rem;}
+.p3-warn-item{background:#2d1a00;border-left:3px solid #f6ad55;border-radius:0 5px 5px 0;padding:.5rem .8rem;font-size:.82rem;color:#f6ad55;}
+.p3-err-item{background:#2d0a0a;border-left:3px solid #fc8181;border-radius:0 5px 5px 0;padding:.5rem .8rem;font-size:.82rem;color:#fc8181;}
+.p3-breakdown-list{display:flex;flex-direction:column;gap:.4rem;}
+.p3-bp-row{display:grid;grid-template-columns:auto 1fr;gap:.6rem;align-items:start;font-size:.85rem;}
+.p3-bp-key{font-family:'IBM Plex Mono',monospace;color:#f6c90e;white-space:nowrap;}
+.p3-bp-val{color:#a0aec0;}
+</style>
+
+<script>
+(function(){
+  function p3Build(){
+    const name=document.getElementById('p3-name').value||'VSC';
+    const ak=document.querySelector('input[name="p3ak"]:checked').value;
+    const pin=document.querySelector('input[name="p3pin"]:checked').value;
+    const puk=document.querySelector('input[name="p3puk"]:checked').value;
+    const minlen=parseInt(document.getElementById('p3-minlen').value)||8;
+    const upper=document.getElementById('p3-upper').checked;
+    const digits=document.getElementById('p3-digits').checked;
+    const special=document.getElementById('p3-special').checked;
+
+    // Build command
+    let cmd=`tpmvscmgr.exe create /name "${name}"`;
+    cmd+=` /adminkey ${ak.toUpperCase()}`;
+    cmd+=` /pin ${pin.toUpperCase()}`;
+    if(puk!=='none') cmd+=` /puk ${puk.toUpperCase()}`;
+
+    const policyParts=[];
+    if(minlen!==8) policyParts.push(`minlen ${minlen}`);
+    if(upper) policyParts.push('uppercase required');
+    if(digits) policyParts.push('digits required');
+    if(special) policyParts.push('specialchars required');
+    if(policyParts.length) cmd+=` /pinpolicy ${policyParts.join(' ')}`;
+
+    cmd+=' /generate';
+
+    document.getElementById('p3-command').textContent=cmd;
+
+    // Warnings
+    const warns=[];
+    if(ak==='default') warns.push({type:'err',msg:'❌ /adminkey DEFAULT ใช้ค่าที่รู้จักสาธารณะ — ห้ามใช้ใน Production'});
+    if(ak==='random') warns.push({type:'warn',msg:'⚠ /adminkey RANDOM: ถ้า PIN หาย จะไม่สามารถ Reset ได้เลย ต้อง Destroy'});
+    if(pin==='default') warns.push({type:'warn',msg:'⚠ /pin DEFAULT: PIN คือ 12345678 — สำหรับ Lab เท่านั้น'});
+    if(puk!=='none'&&ak!=='random') warns.push({type:'warn',msg:'⚠ ถ้าตั้ง PUK แล้ว จะไม่สามารถใช้ Admin Key Reset PIN ได้ — ต้องเลือกทางใดทางหนึ่ง'});
+    if(minlen<6) warns.push({type:'warn',msg:'⚠ PIN ขั้นต่ำ '+minlen+' ตัวสั้นเกินไปสำหรับ Production'});
+
+    const warnEl=document.getElementById('p3-warnings');
+    warnEl.innerHTML=warns.map(w=>`<div class="${w.type==='err'?'p3-err-item':'p3-warn-item'}">${w.msg}</div>`).join('');
+
+    // Breakdown
+    const breakdown=[
+      [`/name "${name}"`, 'ชื่อ VSC ที่ปรากฏใน Device Manager'],
+      [`/adminkey ${ak.toUpperCase()}`, ak==='prompt'?'IT พิมพ์ Admin Key เอง — เก็บใน Vault ทันที':ak==='random'?'สุ่ม Key แล้วทิ้ง — Reset PIN ไม่ได้':ak==='default'?'ค่า default ที่รู้จักสาธารณะ (010203...)':''],
+      [`/pin ${pin.toUpperCase()}`, pin==='prompt'?'ถูก prompt ให้ตั้ง PIN ตอน create':'PIN เริ่มต้น = 12345678'],
+      ...(puk!=='none'?[['/puk PROMPT','User Unblock ด้วย PUK ได้เองโดยไม่ต้องพึ่ง IT']]:[]),
+      ...(policyParts.length?[[`/pinpolicy ${policyParts.join(' ')}`,`บังคับ PIN: min ${minlen} ตัว${upper?', uppercase':''}${digits?', ตัวเลข':''}${special?', special chars':''}`]]:[]),
+      ['/generate','สร้าง file system บน VSC — จำเป็นสำหรับเก็บ Certificate'],
+    ];
+
+    document.getElementById('p3-breakdown').innerHTML=breakdown
+      .map(([k,v])=>`<div class="p3-bp-row"><span class="p3-bp-key">${k}</span><span class="p3-bp-val">→ ${v}</span></div>`)
+      .join('');
+  }
+
+  window.p3Copy=function(){
+    const cmd=document.getElementById('p3-command').textContent;
+    navigator.clipboard.writeText(cmd).then(()=>{
+      const msg=document.getElementById('p3-copy-msg');
+      msg.textContent='✅ Copied!';
+      setTimeout(()=>msg.textContent='',2000);
+    });
+  };
+
+  window.p3Build=p3Build;
+  p3Build();
+})();
+</script>

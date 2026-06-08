@@ -1,0 +1,228 @@
+<div class="page-header">
+  <div class="ph-num" style="background:#1a3a5c">PIN — TOOL 4</div>
+  <h1>PIN / PUK Validator</h1>
+  <p class="ph-sub">ตรวจสอบว่า PIN หรือ PUK ผ่าน Policy ขององค์กรก่อนนำไปใช้จริง</p>
+</div>
+
+<div class="p4-layout">
+
+  <!-- LEFT: Policy Setup -->
+  <div class="pin-tool-card">
+    <div class="p4-section-label">กำหนด Policy</div>
+
+    <div class="pin-field">
+      <label class="pin-label">ความยาวขั้นต่ำ</label>
+      <input id="p4-minlen" type="number" class="pin-input" value="8" min="4" max="127"
+        oninput="p4Check()" style="width:90px">
+    </div>
+    <div class="pin-field">
+      <label class="pin-label">ความยาวสูงสุด</label>
+      <input id="p4-maxlen" type="number" class="pin-input" value="127" min="8" max="127"
+        oninput="p4Check()" style="width:90px">
+    </div>
+
+    <div class="p4-check-group">
+      <label class="p3-check-label">
+        <input type="checkbox" id="p4-upper" onchange="p4Check()">
+        <span>ต้องมี Uppercase (A–Z)</span>
+      </label>
+      <label class="p3-check-label">
+        <input type="checkbox" id="p4-lower" onchange="p4Check()">
+        <span>ต้องมี Lowercase (a–z)</span>
+      </label>
+      <label class="p3-check-label">
+        <input type="checkbox" id="p4-digits" checked onchange="p4Check()">
+        <span>ต้องมีตัวเลข (0–9)</span>
+      </label>
+      <label class="p3-check-label">
+        <input type="checkbox" id="p4-special" onchange="p4Check()">
+        <span>ต้องมี Special characters</span>
+      </label>
+      <label class="p3-check-label">
+        <input type="checkbox" id="p4-nospace" onchange="p4Check()">
+        <span>ห้ามมี Space</span>
+      </label>
+    </div>
+
+    <div class="p4-section-label" style="margin-top:1.2rem">Preset</div>
+    <div class="p4-preset-row">
+      <button class="p4-preset-btn" onclick="p4Preset('lab')">Lab</button>
+      <button class="p4-preset-btn" onclick="p4Preset('basic')">Basic</button>
+      <button class="p4-preset-btn" onclick="p4Preset('hospital')">Hospital ✅</button>
+      <button class="p4-preset-btn" onclick="p4Preset('strict')">Strict</button>
+    </div>
+    <div id="p4-preset-desc" class="p4-preset-desc"></div>
+  </div>
+
+  <!-- RIGHT: Input + Result -->
+  <div class="pin-tool-card">
+    <div class="p4-section-label">ทดสอบ PIN / PUK</div>
+
+    <div class="pin-field">
+      <label class="pin-label">PIN หรือ PUK ที่ต้องการตรวจสอบ</label>
+      <div class="pin-input-row">
+        <input id="p4-pin" type="password" class="pin-input"
+          oninput="p4Check()" placeholder="พิมพ์ PIN ที่ต้องการตรวจ"
+          autocomplete="off" spellcheck="false">
+        <button class="pin-eye-btn" onclick="p4Toggle(this)">👁</button>
+      </div>
+    </div>
+
+    <div id="p4-strength-bar" class="p4-strength-wrap" style="display:none">
+      <div class="p4-strength-track">
+        <div id="p4-strength-fill" class="p4-strength-fill"></div>
+      </div>
+      <span id="p4-strength-label" class="p4-strength-label"></span>
+    </div>
+
+    <div id="p4-result-list" class="p4-result-list"></div>
+
+    <div id="p4-verdict" class="p4-verdict" style="display:none"></div>
+
+    <div class="p4-section-label" style="margin-top:1.2rem">Character Breakdown</div>
+    <div id="p4-char-breakdown" class="p4-char-grid"></div>
+  </div>
+
+</div>
+
+<style>
+.p4-layout{display:grid;grid-template-columns:1fr 1fr;gap:1.2rem;margin-top:1rem;}
+@media(max-width:700px){.p4-layout{grid-template-columns:1fr;}}
+.p4-section-label{font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#4a9eff;margin-bottom:.7rem;border-bottom:1px solid #2d3748;padding-bottom:.3rem;}
+.p4-check-group{display:flex;flex-direction:column;gap:.3rem;}
+.p4-preset-row{display:flex;gap:.5rem;flex-wrap:wrap;}
+.p4-preset-btn{padding:.35rem .9rem;background:#2d3748;border:1px solid #4a5568;border-radius:5px;color:#e2e8f0;cursor:pointer;font-size:.84rem;transition:background .15s;}
+.p4-preset-btn:hover{background:#4a5568;}
+.p4-preset-desc{font-size:.8rem;color:#718096;margin-top:.5rem;min-height:1.2em;}
+.p4-strength-wrap{display:flex;align-items:center;gap:.8rem;margin-bottom:.8rem;}
+.p4-strength-track{flex:1;height:6px;background:#2d3748;border-radius:3px;overflow:hidden;}
+.p4-strength-fill{height:100%;border-radius:3px;transition:width .3s,background .3s;}
+.p4-strength-label{font-size:.82rem;font-weight:600;white-space:nowrap;}
+.p4-result-list{display:flex;flex-direction:column;gap:.35rem;margin-bottom:.8rem;}
+.p4-rule{display:flex;align-items:center;gap:.6rem;font-size:.88rem;padding:.3rem .5rem;border-radius:5px;}
+.p4-rule.pass{color:#48bb78;background:#0a2016;}
+.p4-rule.fail{color:#fc8181;background:#2d0a0a;}
+.p4-rule.info{color:#90cdf4;background:#0a1a2d;}
+.p4-verdict{padding:.8rem 1.1rem;border-radius:8px;font-weight:700;font-size:1rem;text-align:center;}
+.p4-verdict.pass{background:#0a2016;color:#48bb78;border:1.5px solid #48bb78;}
+.p4-verdict.fail{background:#2d0a0a;color:#fc8181;border:1.5px solid #fc8181;}
+.p4-char-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:.5rem;}
+.p4-char-item{background:#0d1117;border:1px solid #2d3748;border-radius:6px;padding:.5rem .6rem;text-align:center;}
+.p4-char-count{font-size:1.2rem;font-weight:700;color:#63b3ed;}
+.p4-char-type{font-size:.72rem;color:#718096;margin-top:.1rem;}
+</style>
+
+<script>
+(function(){
+  const PRESETS={
+    lab:{minlen:8,maxlen:127,upper:false,lower:false,digits:false,special:false,nospace:false,desc:'Lab — ไม่มี policy เพิ่มเติม ขั้นต่ำ 8 ตัว'},
+    basic:{minlen:8,maxlen:127,upper:false,lower:false,digits:true,special:false,nospace:true,desc:'Basic — ต้องมีตัวเลข, ห้ามมี space'},
+    hospital:{minlen:8,maxlen:32,upper:true,lower:false,digits:true,special:true,nospace:true,desc:'Hospital (Recommended) — uppercase + ตัวเลข + special chars, max 32'},
+    strict:{minlen:12,maxlen:127,upper:true,lower:true,digits:true,special:true,nospace:true,desc:'Strict — ทุก character class, ขั้นต่ำ 12 ตัว'},
+  };
+
+  window.p4Preset=function(key){
+    const p=PRESETS[key];
+    document.getElementById('p4-minlen').value=p.minlen;
+    document.getElementById('p4-maxlen').value=p.maxlen;
+    document.getElementById('p4-upper').checked=p.upper;
+    document.getElementById('p4-lower').checked=p.lower;
+    document.getElementById('p4-digits').checked=p.digits;
+    document.getElementById('p4-special').checked=p.special;
+    document.getElementById('p4-nospace').checked=p.nospace;
+    document.getElementById('p4-preset-desc').textContent=p.desc;
+    p4Check();
+  };
+
+  window.p4Toggle=function(btn){
+    const inp=document.getElementById('p4-pin');
+    inp.type=inp.type==='password'?'text':'password';
+    btn.textContent=inp.type==='password'?'👁':'🙈';
+  };
+
+  window.p4Check=function(){
+    const pin=document.getElementById('p4-pin').value;
+    const minlen=parseInt(document.getElementById('p4-minlen').value)||8;
+    const maxlen=parseInt(document.getElementById('p4-maxlen').value)||127;
+    const reqUpper=document.getElementById('p4-upper').checked;
+    const reqLower=document.getElementById('p4-lower').checked;
+    const reqDigits=document.getElementById('p4-digits').checked;
+    const reqSpecial=document.getElementById('p4-special').checked;
+    const noSpace=document.getElementById('p4-nospace').checked;
+
+    if(!pin){
+      document.getElementById('p4-result-list').innerHTML='';
+      document.getElementById('p4-verdict').style.display='none';
+      document.getElementById('p4-strength-bar').style.display='none';
+      document.getElementById('p4-char-breakdown').innerHTML='';
+      return;
+    }
+
+    // Char counts
+    const uppers=(pin.match(/[A-Z]/g)||[]).length;
+    const lowers=(pin.match(/[a-z]/g)||[]).length;
+    const digs=(pin.match(/[0-9]/g)||[]).length;
+    const specs=(pin.match(/[^A-Za-z0-9]/g)||[]).length;
+    const spaces=(pin.match(/ /g)||[]).length;
+    const nonAscii=(pin.match(/[^\x20-\x7E]/g)||[]).length;
+
+    // Rules
+    const rules=[
+      {label:`ความยาว: ${pin.length} ตัว (${minlen}–${maxlen})`, pass:pin.length>=minlen&&pin.length<=maxlen},
+      ...(reqUpper?[{label:`Uppercase: ${uppers} ตัว (ต้องมีอย่างน้อย 1)`,pass:uppers>0}]:[]),
+      ...(reqLower?[{label:`Lowercase: ${lowers} ตัว (ต้องมีอย่างน้อย 1)`,pass:lowers>0}]:[]),
+      ...(reqDigits?[{label:`ตัวเลข: ${digs} ตัว (ต้องมีอย่างน้อย 1)`,pass:digs>0}]:[]),
+      ...(reqSpecial?[{label:`Special chars: ${specs} ตัว (ต้องมีอย่างน้อย 1)`,pass:specs>0}]:[]),
+      ...(noSpace?[{label:`Space: ${spaces} ตัว (ต้องไม่มีเลย)`,pass:spaces===0}]:[]),
+      ...(nonAscii>0?[{label:`⚠ พบ Unicode/ภาษาไทย: ${nonAscii} ตัว — ใช้ไม่ได้`,pass:false}]:[]),
+    ];
+
+    const allPass=rules.every(r=>r.pass);
+
+    document.getElementById('p4-result-list').innerHTML=rules
+      .map(r=>`<div class="p4-rule ${r.pass?'pass':'fail'}">${r.pass?'✅':'❌'} ${r.label}</div>`)
+      .join('');
+
+    // Strength
+    let score=0;
+    if(pin.length>=8)score++;
+    if(pin.length>=12)score++;
+    if(uppers>0)score++;
+    if(digs>0)score++;
+    if(specs>0)score++;
+    const pct=Math.round((score/5)*100);
+    const colors=['#fc8181','#f6ad55','#f6e05e','#68d391','#48bb78'];
+    const labels=['อ่อนมาก','อ่อน','ปานกลาง','ดี','แข็งแกร่ง'];
+    const idx=Math.min(Math.floor(score),4);
+    const fill=document.getElementById('p4-strength-fill');
+    fill.style.width=pct+'%';
+    fill.style.background=colors[idx];
+    document.getElementById('p4-strength-label').textContent=labels[idx];
+    document.getElementById('p4-strength-label').style.color=colors[idx];
+    document.getElementById('p4-strength-bar').style.display='flex';
+
+    // Verdict
+    const v=document.getElementById('p4-verdict');
+    v.style.display='block';
+    v.className='p4-verdict '+(allPass?'pass':'fail');
+    v.textContent=allPass?'✅ PIN ผ่าน Policy ทุกข้อ — ใช้งานได้':'❌ PIN ไม่ผ่าน Policy — ดูข้อที่ fail ด้านบน';
+
+    // Char breakdown
+    document.getElementById('p4-char-breakdown').innerHTML=[
+      [uppers,'A–Z'],
+      [lowers,'a–z'],
+      [digs,'0–9'],
+      [specs,'Special'],
+    ].map(([c,t])=>`<div class="p4-char-item"><div class="p4-char-count">${c}</div><div class="p4-char-type">${t}</div></div>`).join('');
+  };
+
+  window.p4Check=p4Check;
+  // Load hospital preset by default
+  p4Preset('hospital');
+  document.getElementById('p4-pin').value='';
+  document.getElementById('p4-result-list').innerHTML='';
+  document.getElementById('p4-verdict').style.display='none';
+  document.getElementById('p4-strength-bar').style.display='none';
+  document.getElementById('p4-char-breakdown').innerHTML='';
+})();
+</script>
