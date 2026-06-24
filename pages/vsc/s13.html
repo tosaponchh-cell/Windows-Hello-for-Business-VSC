@@ -1,0 +1,98 @@
+<div class="page-header">
+  <div class="ph-num" style="background:#1b5e20">13 — OPERATIONS</div>
+  <h1>IT Support Flow</h1>
+  <p class="ph-sub">ขั้นตอนการ Setup PC, Certificate Enrollment และ workflow แก้ปัญหา PIN/PUK/TPM Lockout</p>
+</div>
+
+<h2>0. Active Directory — GPO ที่ต้องตั้งก่อน</h2>
+<div class="tbl-wrap"><table>
+  <tr><th>GPO</th><th>Path</th><th>เหตุผล</th></tr>
+  <tr>
+    <td>Unblock smart card screen</td>
+    <td><code>Computer Config → Admin Templates → Windows Components → Smart Card → Allow Integrated Unblock screen to be displayed at the time of logon</code></td>
+    <td>ให้ UI แสดงช่อง PUK ที่ login screen เมื่อ card blocked</td>
+  </tr>
+  <tr>
+    <td>Remove Change Password</td>
+    <td><code>User Config → Admin Templates → System → Ctrl+Alt+Del Options → Remove Change Password</code></td>
+    <td>ป้องกัน user เปลี่ยน PIN เอง นอกช่องทาง IT</td>
+  </tr>
+</table></div>
+
+<h2>1. Setup PC (ก่อน Deploy)</h2>
+<div class="flow-steps">
+  <div class="flow-step"><div class="step-num">1</div><div class="step-body"><strong>ติดตั้ง Windows</strong><p>Clean install, update ให้เป็น version ล่าสุด</p></div></div>
+  <div class="flow-step"><div class="step-num">2</div><div class="step-body"><strong>สร้าง Local Admin</strong><p>สร้าง local user: <code>lcadmin</code> สำหรับใช้ maintain เครื่อง</p></div></div>
+  <div class="flow-step"><div class="step-num">3</div><div class="step-body"><strong>เชื่อมต่อ VLAN</strong><p>เชื่อม VLAN ที่ถูกต้อง (เช่น VLAN 105) ก่อน join domain</p></div></div>
+  <div class="flow-step"><div class="step-num">4</div><div class="step-body"><strong>Join Domain</strong><p>Join เข้า domain แล้ว restart</p></div></div>
+  <div class="flow-step"><div class="step-num">5</div><div class="step-body"><strong>ตรวจสอบ TPM</strong><p>Win + R → <code>tpm.msc</code><br><strong>Ready</strong> = เปิดแล้ว ✓ | <strong>Disabled</strong> = ต้องเปิดใน BIOS</p></div></div>
+</div>
+
+<h2>2. ติดตั้ง VSC</h2>
+<div class="callout info"><span class="label">📌 ต้อง Login เป็น Domain User ก่อน</span><p>Login ด้วย User domain ที่จะใช้งานจริง ก่อนรัน tpmvscmgr.exe</p></div>
+<pre><span class="cm">// เปิด CMD as Administrator แล้วรัน:</span>
+<span class="ck">tpmvscmgr.exe create</span> /name <span class="cs">"Client01"</span> \
+  /pin prompt \
+  /pinpolicy minlen <span class="cn">10</span> uppercase REQUIRED lowercase REQUIRED digits REQUIRED specialchars REQUIRED \
+  /adminkey prompt \
+  /puk prompt \
+  /attestation AIK_ONLY \
+  /generate</pre>
+<div class="callout warn"><span class="label">⚠ บันทึก PIN และ PUK ลง Vault ทันที</span><p>adminkey และ PUK ต้องบันทึกลง Password Vault ก่อนปิดหน้าต่าง CMD — ถ้าหายไม่มีทางกู้ได้นอกจาก Destroy + Create ใหม่</p></div>
+
+<h2>3. Certificate Enrollment</h2>
+<div class="flow-steps">
+  <div class="flow-step"><div class="step-num">1</div><div class="step-body"><strong>Login ด้วย Domain User</strong><p>ต้องเป็น user ที่จะใช้งานจริง ไม่ใช่ local admin</p></div></div>
+  <div class="flow-step"><div class="step-num">2</div><div class="step-body"><strong>เปิด certmgr.msc</strong><p>Win + R → <code>certmgr.msc</code> → Enter</p></div></div>
+  <div class="flow-step"><div class="step-num">3</div><div class="step-body"><strong>Request New Certificate</strong><p>Personal → คลิกขวา Certificates → All Tasks → Request New Certificate...<br>Next → Active Directory Enrollment Policy → Next → เลือก <strong>Smartcard template</strong> → Enroll</p></div></div>
+  <div class="flow-step"><div class="step-num">4</div><div class="step-body"><strong>ใส่ PIN เมื่อถูกถาม</strong><p>ใส่ PIN ที่ตั้งไว้ตอน tpmvscmgr → Status: <strong>Succeeded</strong> → Finish</p></div></div>
+  <div class="flow-step"><div class="step-num">5</div><div class="step-body"><strong>ตรวจสอบ</strong><p>certmgr.msc → Personal → Certificates → ต้องเห็น cert ของ user issued by Issuing CA</p></div></div>
+</div>
+
+<h2>4. ทดสอบ Login + ปิด Password Login</h2>
+<div class="flow-steps">
+  <div class="flow-step"><div class="step-num">1</div><div class="step-body"><strong>ทดสอบ Smart Card Login</strong><p>Logout → Login screen → Sign-in options → Smart Card icon → ใส่ PIN → ต้องเข้าได้</p></div></div>
+  <div class="flow-step"><div class="step-num">2</div><div class="step-body"><strong>ปิด Password Login (หลัง confirm กับ Domain Admin)</strong><p>AD Users and Computers → Properties ของ user → Tab: Account<br>✔ เลือก <strong>"Smart card is required for interactive logon"</strong></p></div></div>
+  <div class="flow-step"><div class="step-num">3</div><div class="step-body"><strong>ทดสอบอีกครั้ง</strong><p>ต้องไม่สามารถ login ด้วย Password ได้แล้ว</p></div></div>
+</div>
+
+<h2>5. กรณี User ลืม PIN หรือถูก Lockout</h2>
+
+<div class="callout info"><span class="label">📌 ก่อนดำเนินการใดๆ</span><p>ยืนยันบัตรประจำตัวพนักงาน / ยืนยัน Username ตรงกับเครื่อง — บันทึก Log: ชื่อ IT, ชื่อ User, เวลาเริ่ม, เหตุผล</p></div>
+
+<h3>Decision Tree — อ่าน Error Message ที่หน้า Login</h3>
+<div class="dtree">
+  <div class="dt-node dt-q">ขึ้น Error: "The PIN has been blocked temporarily..."</div>
+  <div class="dt-line"></div>
+  <div class="dt-node" style="background:#fff3e0;border-color:#ffa726;color:#bf6c00;font-weight:500">กด OK แล้วดูว่ามีอะไรปรากฏ</div>
+  <div class="dt-line"></div>
+  <div class="dt-branch">
+    <div class="dt-side">
+      <div class="dt-label">มี "Unblock smart card"</div>
+      <div class="dt-line"></div>
+      <div class="dt-node dt-a" style="max-width:280px">PUK Path<br><small style="font-weight:400">ใส่ผิดช้าๆ (&gt;5 วิ/ครั้ง)</small></div>
+      <div class="dt-line"></div>
+      <div class="dt-node dt-b" style="max-width:280px">กด "Unblock smart card"<br>กรอก PUK จาก Vault<br>ตั้ง PIN ใหม่ตาม Policy<br>ทดสอบ Login</div>
+    </div>
+    <div class="dt-side">
+      <div class="dt-label">เห็นแค่ "Try again later"</div>
+      <div class="dt-line"></div>
+      <div class="dt-node dt-c" style="max-width:280px">TPM Lockout<br><small style="font-weight:400">ใส่ผิดเร็ว (&lt;5 วิ/ครั้ง)<br>TPM ตีความเป็น Brute-force</small></div>
+      <div class="dt-line"></div>
+      <div class="dt-node dt-b" style="max-width:280px">ทางเลือก A: รอ 10 นาที–1 ชม.<br>ให้ TPM คลายล็อกเอง<br><br>ทางเลือก B (เร่งด่วน):<br>Escalate → Destroy + Create ใหม่</div>
+    </div>
+  </div>
+</div>
+
+<h2>6. Destroy + Create (กรณี TPM Lockout หรือ PUK หาย)</h2>
+<div class="callout warn"><span class="label">⚠ Certificate จะหายทั้งหมด</span><p>Destroy VSC = private key ถูกลบถาวร ต้อง Enroll cert ใหม่หลังจาก Create VSC เสร็จ</p></div>
+<div class="flow-steps">
+  <div class="flow-step"><div class="step-num">1</div><div class="step-body"><strong>Login ด้วย lcadmin</strong><p>Login ด้วย local admin account ที่เตรียมไว้ตอน setup</p></div></div>
+  <div class="flow-step"><div class="step-num">2</div><div class="step-body"><strong>Destroy VSC เดิม</strong>
+<pre style="margin:.3rem 0 0"><span class="ck">certutil -scinfo</span>   <span class="cm">// ดู instance ID</span>
+<span class="ck">tpmvscmgr.exe destroy /instance ROOT\SMARTCARDREADER\0000</span></pre></div></div>
+  <div class="flow-step"><div class="step-num">3</div><div class="step-body"><strong>Logout แล้ว Login ด้วย Domain User</strong><p>จำเป็นต้องเป็น domain user เพื่อทำ Create และ Enroll</p></div></div>
+  <div class="flow-step"><div class="step-num">4</div><div class="step-body"><strong>Create VSC ใหม่</strong><p>ทำตามขั้นตอนที่ 2 ด้านบน — บันทึก PIN/PUK/AdminKey ใหม่ลง Vault</p></div></div>
+  <div class="flow-step"><div class="step-num">5</div><div class="step-body"><strong>Enroll Certificate ใหม่</strong><p>ทำตามขั้นตอนที่ 3 ด้านบน</p></div></div>
+  <div class="flow-step"><div class="step-num">6</div><div class="step-body"><strong>ปิด Case</strong><p>User ทดสอบ Login ด้วย PIN ใหม่ต่อหน้า IT — บันทึก Log: เวลาสำเร็จ, วิธีที่ใช้ (PUK หรือ Destroy/Create)</p></div></div>
+</div>

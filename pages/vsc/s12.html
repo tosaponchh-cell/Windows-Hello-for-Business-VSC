@@ -1,0 +1,101 @@
+<div class="page-header">
+  <div class="ph-num" style="background:#1b5e20">12 — OPERATIONS</div>
+  <h1>tpmvscmgr Deep Dive</h1>
+  <p class="ph-sub">รายละเอียดทุก parameter ของ tpmvscmgr.exe — /pin /adminkey /puk /attestation และ PIN Policy</p>
+</div>
+
+<div class="callout warn"><span class="label">⚠ บังคับ — Run as Administrator ทุกครั้ง</span><p>ถ้าไม่ elevate → <code>Error: Access is denied (0x80070005)</code> ทันที — Right-click CMD → Run as administrator</p></div>
+
+<h2>Full Command (Production)</h2>
+<pre><span class="ck">tpmvscmgr.exe create</span> /name <span class="cs">"Client01"</span> \
+  /pin prompt \
+  /pinpolicy minlen <span class="cn">10</span> uppercase REQUIRED lowercase REQUIRED digits REQUIRED specialchars REQUIRED \
+  /adminkey prompt \
+  /puk prompt \
+  /attestation AIK_ONLY \
+  /generate</pre>
+
+<h2>/name — ชื่อ Container</h2>
+<div class="tbl-wrap"><table>
+  <tr><th>Parameter</th><th>ความหมาย</th><th>หมายเหตุ</th></tr>
+  <tr><td><code>/name "ชื่อ"</code></td><td>ชื่อของ VSC container</td><td>เป็นแค่ label — ระบบใช้เลข <code>0000</code>, <code>0001</code>... จริงๆ ในการ manage</td></tr>
+</table></div>
+
+<h2>/pin — PIN หลักสำหรับ Login</h2>
+<div class="tbl-wrap"><table>
+  <tr><th>Option</th><th>ผลลัพธ์</th><th>Production?</th></tr>
+  <tr><td><code>/pin default</code></td><td>PIN ถูกตั้งเป็น <strong>12345678</strong></td><td class="warn">Lab เท่านั้น</td></tr>
+  <tr><td><code>/pin prompt</code></td><td>ระบบถามให้ตั้ง PIN เอง (min 8 ตัว)</td><td class="good">✓ แนะนำ</td></tr>
+</table></div>
+
+<h3>/pinpolicy — กฎการตั้ง PIN</h3>
+<pre><span class="cm">// ตัวอย่าง production policy</span>
+/pinpolicy minlen <span class="cn">10</span> uppercase REQUIRED lowercase REQUIRED digits REQUIRED specialchars REQUIRED
+
+<span class="cm">// options ทั้งหมด</span>
+minlen [N]          <span class="cm">// ความยาวขั้นต่ำ (ต่ำสุด 4, default 8, production แนะนำ 10+)</span>
+uppercase  REQUIRED | ALLOWED | DISALLOWED
+lowercase  REQUIRED | ALLOWED | DISALLOWED
+digits     REQUIRED | ALLOWED | DISALLOWED
+specialchars REQUIRED | ALLOWED | DISALLOWED  <span class="cm">// !@#$%^&* ฯลฯ</span></pre>
+
+<h2>/adminkey — กุญแจบริหาร (Admin Key)</h2>
+<div class="tbl-wrap"><table>
+  <tr><th>Option</th><th>ผลลัพธ์</th><th>Production?</th></tr>
+  <tr><td><code>/adminkey default</code></td><td><code>010203040506070801020304050607080102030405060708</code></td><td class="warn">Lab เท่านั้น</td></tr>
+  <tr><td><code>/adminkey prompt</code></td><td>ตั้งเอง — ต้องเป็น Hex 48 ตัวพอดี</td><td class="good">✓ แนะนำ</td></tr>
+  <tr><td><code>/adminkey random</code></td><td>สุ่ม — หายทันที ไม่มีทางกู้</td><td class="bad">✗ ห้ามใช้ production</td></tr>
+</table></div>
+<div class="callout warn"><span class="label">⚠ Format ของ adminkey prompt</span><p>ต้องเป็น <strong>ตัวเลข 0-9 และ A-F หรือ a-f เท่านั้น ความยาวรวม 48 ตัวพอดี</strong><br>นอกเหนือจากนี้ → <code>Error 0x80070057</code><br>ตัวอย่างที่ถูกต้อง: <code>AABBCCDDEEFF00112233445566778899AABBCCDDEEFF0011</code></p></div>
+
+<h2>/puk — PIN Unlock Key (กุญแจกู้ PIN)</h2>
+<div class="tbl-wrap"><table>
+  <tr><th>Option</th><th>ผลลัพธ์</th><th>Production?</th></tr>
+  <tr><td><code>/puk default</code></td><td>PUK ถูกตั้งเป็น <strong>123456789012</strong></td><td class="warn">Lab เท่านั้น</td></tr>
+  <tr><td><code>/puk prompt</code></td><td>ตั้งเอง — เก็บไว้ใน Vault</td><td class="good">✓ แนะนำ</td></tr>
+  <tr><td><code>/puk random</code></td><td>สุ่ม — หายทันที กู้ PIN ไม่ได้ตลอดกาล</td><td class="bad">✗ ห้ามใช้</td></tr>
+</table></div>
+<div class="callout info"><span class="label">📌 PUK คืออะไร</span><p>PUK (PIN Unlock Key) ใช้กู้ PIN เมื่อ user ใส่ผิดหลายครั้งจนขึ้น "The smart card is blocked" — IT Support ใช้ PUK นี้เพื่อ unlock โดยไม่ต้อง destroy VSC ใหม่ทั้งหมด ต้องเก็บ PUK ใน Password Vault เสมอ</p></div>
+
+<h2>/attestation — การยืนยัน Hardware Binding</h2>
+<p>Attestation คือกระบวนการพิสูจน์ว่า private key ถูกสร้างและผูกอยู่ใน TPM hardware จริง ไม่ใช่ software จำลอง</p>
+<div class="tbl-wrap"><table>
+  <tr><th>Mode</th><th>ทำงานอย่างไร</th><th>ต้องออก Internet?</th><th>ต้องติดตั้งเพิ่ม?</th></tr>
+  <tr><td><code>AIK_ONLY</code></td><td>สร้าง AIK ภายในเครื่อง TPM รับประกันตัวเอง</td><td class="good">❌</td><td class="good">❌</td></tr>
+  <tr><td><code>AIK_AND_CERT</code> + Microsoft HAS</td><td>ส่ง AIK ไป Microsoft Health Attestation Service บน Cloud</td><td class="bad">✅</td><td class="good">❌</td></tr>
+  <tr><td><code>AIK_AND_CERT</code> + HRA LAN</td><td>ส่งผ่าน HRA Server ใน LAN → Issuing CA ออก AIK Cert</td><td class="good">❌</td><td class="bad">✅ HRA Server</td></tr>
+</table></div>
+
+<h3>AIK_ONLY Flow (แนะนำสำหรับระบบปิด)</h3>
+<pre><span class="ck">tpmvscmgr /attestation AIK_ONLY</span>
+    │
+    ▼
+<span class="ct">TPM ในเครื่อง CLIENT01</span>
+    ├── สร้าง AIK (Attestation Identity Key)
+    ├── บันทึก AIK ลงใน TPM
+    └── จบกระบวนการ — ไม่มีการติดต่อภายนอกใดๆ
+<span class="cm">// Issuing CA ไม่เกี่ยวกับ Attestation เลย — เกี่ยวแค่ Certificate Enrollment ตามปกติ</span></pre>
+
+<h3>AIK_AND_CERT + HRA Server Flow (ถ้าต้องการ Hardware-verified แบบ Local)</h3>
+<pre><span class="ct">CLIENT01</span>
+    │  ส่ง AIK + EK (Endorsement Key จากโรงงาน)
+    ▼
+<span class="ct">HRA Server</span>  <span class="cm">← Windows Server role ใน LAN</span>
+    │  ขอ AIK Certificate
+    ▼
+<span class="ct">Issuing CA</span>
+    ├── ตรวจสอบ EK ว่ามาจาก TPM ที่เชื่อถือได้
+    ├── ✓ ผ่าน → ออก AIK Certificate
+    └── ✗ ไม่ผ่าน → ปฏิเสธ
+    │  ส่ง AIK Certificate กลับผ่าน HRA
+    ▼
+<span class="ct">CLIENT01</span>  <span class="cm">← VSC ถูก Attest แบบ Hardware-bound โดย CA ของคุณเอง</span></pre>
+<div class="callout tip"><span class="label">✅ แนะนำสำหรับโรงพยาบาล (Closed Network)</span><p>ใช้ <code>AIK_ONLY</code> — ลดความยุ่งยาก ไม่ต้องออก internet ไม่ต้องติดตั้งเพิ่ม และยังได้ hardware binding จาก TPM อยู่ เสริมด้วย GPO ผูก VSC กับเครื่อง (Machine-bound) แทน</p></div>
+
+<h2>Destroy Command</h2>
+<pre><span class="cm">// ตรวจ instance ID ก่อน</span>
+<span class="ck">certutil -scinfo</span>   <span class="cm">// ดูชื่อ instance เช่น ROOT\SMARTCARDREADER\0000</span>
+
+<span class="cm">// ลบ VSC</span>
+<span class="ck">tpmvscmgr.exe destroy /instance ROOT\SMARTCARDREADER\0000</span>
+<span class="cm">// ⚠ ต้อง destroy ก่อนล้างเครื่อง (Clean Install) เสมอ เพื่อเคลียร์ TPM</span></pre>
