@@ -10,40 +10,96 @@
         {
           "label": "Foundation",
           "sections": [
-            { "id": "s01", "icon": "🏛", "title": "ภาพรวม & หลักการ" },
-            { "id": "s02", "icon": "⚖", "title": "Trust Models" }
+            {
+              "id": "s01",
+              "icon": "🏛",
+              "title": "ภาพรวม & หลักการ"
+            },
+            {
+              "id": "s02",
+              "icon": "⚖",
+              "title": "Trust Models"
+            }
           ]
         },
         {
           "label": "Crypto Internals",
           "sections": [
-            { "id": "s03", "icon": "🔬", "title": "TPM Deep Dive" },
-            { "id": "s04", "icon": "📜", "title": "Certificate Trust" },
-            { "id": "s05", "icon": "🔑", "title": "Key Trust" },
-            { "id": "s06", "icon": "☁", "title": "Cloud Kerberos" }
+            {
+              "id": "s03",
+              "icon": "🔬",
+              "title": "TPM Deep Dive"
+            },
+            {
+              "id": "s04",
+              "icon": "📜",
+              "title": "Certificate Trust"
+            },
+            {
+              "id": "s05",
+              "icon": "🔑",
+              "title": "Key Trust"
+            },
+            {
+              "id": "s06",
+              "icon": "☁",
+              "title": "Cloud Kerberos"
+            }
           ]
         },
         {
           "label": "Operations",
           "sections": [
-            { "id": "s07", "icon": "⚙", "title": "Provisioning Flow" },
-            { "id": "s08", "icon": "🔄", "title": "Authentication Flow" },
-            { "id": "s09", "icon": "🔧", "title": "Troubleshooting" }
+            {
+              "id": "s07",
+              "icon": "⚙",
+              "title": "Provisioning Flow"
+            },
+            {
+              "id": "s08",
+              "icon": "🔄",
+              "title": "Authentication Flow"
+            },
+            {
+              "id": "s09",
+              "icon": "🔧",
+              "title": "Troubleshooting"
+            }
           ]
         },
         {
           "label": "Advanced",
           "sections": [
-            { "id": "s10", "icon": "🌐", "title": "PRT & Cloud SSO" },
-            { "id": "s11", "icon": "🔁", "title": "PIN Reset" },
-            { "id": "s12", "icon": "💾", "title": "Hardware Lifecycle" },
-            { "id": "s13", "icon": "⚡", "title": "WHfB vs FIDO2" }
+            {
+              "id": "s10",
+              "icon": "🌐",
+              "title": "PRT & Cloud SSO"
+            },
+            {
+              "id": "s11",
+              "icon": "🔁",
+              "title": "PIN Reset"
+            },
+            {
+              "id": "s12",
+              "icon": "💾",
+              "title": "Hardware Lifecycle"
+            },
+            {
+              "id": "s13",
+              "icon": "⚡",
+              "title": "WHfB vs FIDO2"
+            }
           ]
         },
         {
           "label": "Visual Guide",
           "sections": [
-            { "id": "s14", "icon": "📊", "title": "Threat · CA · Hospital" }
+            {
+              "id": "s14",
+              "icon": "📊",
+              "title": "Threat · CA · Hospital"
+            }
           ]
         }
       ]
@@ -58,47 +114,96 @@
         {
           "label": "Interactive",
           "sections": [
-            { "id": "a01", "icon": "🎬", "title": "Flow Diagrams (Animated)" }
+            {
+              "id": "a01",
+              "icon": "🎬",
+              "title": "Flow Diagrams (Animated)"
+            }
           ]
         },
         {
           "label": "Foundation",
           "sections": [
-            { "id": "s01", "icon": "🏛", "title": "Architecture & Prerequisites" }
+            {
+              "id": "s01",
+              "icon": "🏛",
+              "title": "Architecture & Prerequisites"
+            }
           ]
         },
         {
           "label": "PKI Build",
           "sections": [
-            { "id": "s02", "icon": "🔐", "title": "Build Root CA (ROOTCA)" },
-            { "id": "s03", "icon": "🏗", "title": "Build Issuing CA" },
-            { "id": "s04", "icon": "📝", "title": "Sign Request & Install Cert" },
-            { "id": "s05", "icon": "📋", "title": "Certificate Template" }
+            {
+              "id": "s02",
+              "icon": "🔐",
+              "title": "Build Root CA (ROOTCA)"
+            },
+            {
+              "id": "s03",
+              "icon": "🏗",
+              "title": "Build Issuing CA"
+            },
+            {
+              "id": "s04",
+              "icon": "📝",
+              "title": "Sign Request & Install Cert"
+            },
+            {
+              "id": "s05",
+              "icon": "📋",
+              "title": "Certificate Template"
+            }
           ]
         },
         {
           "label": "VSC Setup",
           "sections": [
-            { "id": "s06", "icon": "💳", "title": "Create Virtual Smart Card" },
-            { "id": "s07", "icon": "🎫", "title": "Certificate Enrollment" },
-            { "id": "s08", "icon": "🔄", "title": "Test Smart Card Logon" }
+            {
+              "id": "s06",
+              "icon": "💳",
+              "title": "Create Virtual Smart Card"
+            },
+            {
+              "id": "s07",
+              "icon": "🎫",
+              "title": "Certificate Enrollment"
+            },
+            {
+              "id": "s08",
+              "icon": "🔄",
+              "title": "Test Smart Card Logon"
+            }
           ]
         },
         {
           "label": "Operations",
           "sections": [
-            { "id": "s09", "icon": "🔧", "title": "Troubleshooting" },
-            { "id": "s10", "icon": "📖", "title": "Command Reference" },
-            { "id": "s11", "icon": "⭐", "title": "Tips & Enterprise Path" }
-          ]
-        },
-        {
-          "label": "PIN Management",
-          "sections": [
-            { "id": "pin01", "icon": "🔐", "title": "Challenge/Response Calculator" },
-            { "id": "pin02", "icon": "⚡", "title": "Admin Key Generator" },
-            { "id": "pin03", "icon": "🛠", "title": "Command Builder" },
-            { "id": "pin04", "icon": "✅", "title": "PIN Policy Validator" }
+            {
+              "id": "s09",
+              "icon": "🔧",
+              "title": "Troubleshooting"
+            },
+            {
+              "id": "s10",
+              "icon": "📖",
+              "title": "Command Reference"
+            },
+            {
+              "id": "s11",
+              "icon": "⭐",
+              "title": "Tips & Enterprise Path"
+            },
+            {
+              "id": "s12",
+              "icon": "⚙",
+              "title": "tpmvscmgr Deep Dive"
+            },
+            {
+              "id": "s13",
+              "icon": "🧑‍💻",
+              "title": "IT Support Flow"
+            }
           ]
         }
       ]
@@ -113,7 +218,11 @@
         {
           "label": "Coming Soon",
           "sections": [
-            { "id": "s01", "icon": "📋", "title": "Overview" }
+            {
+              "id": "s01",
+              "icon": "📋",
+              "title": "Overview"
+            }
           ]
         }
       ]
